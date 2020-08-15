@@ -1,7 +1,6 @@
 <p align="center">
   <img src="doc/logo-header.svg" alt="bat - a cat clone with wings"><br>
-  <a href="https://travis-ci.org/sharkdp/bat"><img src="https://travis-ci.org/sharkdp/bat.svg?branch=master" alt="Build Status"></a>
-  <a href="https://ci.appveyor.com/project/sharkdp/bat"><img src="https://ci.appveyor.com/api/projects/status/cptsmtbiwbnr2vhf/branch/master?svg=true"></a>
+  <a href="https://github.com/sharkdp/bat/actions?query=workflow%3ACICD"><img src="https://github.com/sharkdp/bat/workflows/CICD/badge.svg" alt="Build Status"></a>
   <img src="https://img.shields.io/crates/l/bat.svg" alt="license">
   <a href="https://crates.io/crates/bat"><img src="https://img.shields.io/crates/v/bat.svg?colorB=319e8c" alt="Version info"></a><br>
   A <i>cat(1)</i> clone with syntax highlighting and Git integration.
@@ -39,7 +38,7 @@ characters:
 
 ### Automatic paging
 
-`bat` can pipe its own output to `less` if the output is too large for one screen.
+`bat` can pipe its own output to a pager (e.g `less`) if the output is too large for one screen.
 
 ### File concatenation
 
@@ -355,6 +354,26 @@ light background, some themes like `GitHub` or `OneHalfLight` will work better f
 You can also use a custom theme by following the
 ['Adding new themes' section below](https://github.com/sharkdp/bat#adding-new-themes).
 
+### 8-bit themes
+
+`bat` has four themes that always use [8-bit colors](https://en.wikipedia.org/wiki/ANSI_escape_code#Colors),
+even when truecolor support is available:
+
+- `ansi-dark` looks decent on any terminal with a dark background. It uses 3-bit colors: black, red,
+  green, yellow, blue, magenta, cyan, and white.
+- `ansi-light` is like `ansi-dark`, but for terminals with a light background.
+- `base16` is designed for [base16](https://github.com/chriskempson/base16) terminal themes. It uses
+  4-bit colors (3-bit colors plus bright variants) in accordance with the
+  [base16 styling guidelines](https://github.com/chriskempson/base16/blob/master/styling.md).
+- `base16-256` is designed for [base16-shell](https://github.com/chriskempson/base16-shell).
+  It replaces certain bright colors with 8-bit colors from 16 to 21. **Do not** use this simply
+  because you have a 256-color terminal but are not using base16-shell.
+
+Although these themes are more restricted, they have two advantages over truecolor themes:
+
+- They harmonize better with other terminal software using 3-bit or 4-bit colors.
+- When you change your terminal theme, `bat` output already on the screen will update to match.
+
 ### Output style
 
 You can use the `--style` option to control the appearance of `bat`s output.
@@ -555,9 +574,10 @@ bat() {
 
 ### Terminals & colors
 
-`bat` handles terminals *with* and *without* truecolor support. However, the colors in the syntax
-highlighting themes are not optimized for 8-bit colors and it is therefore strongly recommended
-that you use a terminal with 24-bit truecolor support (`terminator`, `konsole`, `iTerm2`, ...).
+`bat` handles terminals *with* and *without* truecolor support. However, the colors in most syntax
+highlighting themes are not optimized for 8-bit colors. It is therefore strongly recommended
+that you use a terminal with 24-bit truecolor support (`terminator`, `konsole`, `iTerm2`, ...),
+or use one of the basic [8-bit themes](#8-bit-themes) designed for a restricted set of colors.
 See [this article](https://gist.github.com/XVilka/8346728) for more details and a full list of
 terminals with truecolor support.
 

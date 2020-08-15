@@ -3,27 +3,67 @@ name: CICD
 env:
   PROJECT_NAME: bat
   PROJECT_DESC: "A `cat` clone with wings"
-  PROJECT_AUTH: "sharkdp"
-  RUST_MIN_SRV: "1.40.0"
+  PROJECT_MAINTAINER: "David Peter <mail@david-peter.de>"
+  PROJECT_HOMEPAGE: "https://github.com/sharkdp/bat"
+  MIN_SUPPORTED_RUST_VERSION: "1.40.0"
 
 on: [push, pull_request]
 
 jobs:
   min_version:
-    name: MinSRV # Minimum supported rust version
+    name: Minimum supported rust version
     runs-on: ubuntu-latest
     steps:
-    - uses: actions/checkout@v1
-    - name: Install `rust` toolchain (v${{ env.RUST_MIN_SRV }})
+    - name: Git checkout
+      uses: actions/checkout@v1
+    - name: Install rust toolchain (v${{ env.MIN_SUPPORTED_RUST_VERSION }})
       uses: actions-rs/toolchain@v1
       with:
-        toolchain: ${{ env.RUST_MIN_SRV }}
+        toolchain: ${{ env.MIN_SUPPORTED_RUST_VERSION }}
         default: true
         profile: minimal # minimal component installation (ie, no documentation)
     - name: Test
       uses: actions-rs/cargo@v1
       with:
         command: test
+
+  test_with_new_syntaxes_and_themes:
+    name: Test with new syntaxes and themes
+    runs-on: ubuntu-latest
+    steps:
+    - name: Git checkout
+      uses: actions/checkout@v1
+      with:
+        submodules: true # we need all syntax and theme submodules
+    - name: Install Rust toolchain
+      uses: actions-rs/toolchain@v1
+      with:
+        toolchain: stable
+        default: true
+        profile: minimal
+    - name: Build and install bat
+      uses: actions-rs/cargo@v1
+      with:
+        command: install
+        args: --locked --path .
+    - name: Rebuild binary assets (syntaxes and themes)
+      run: bash assets/create.sh
+    - name: Build and install bat with updated assets
+      uses: actions-rs/cargo@v1
+      with:
+        command: install
+        args: --locked --path .
+    - name: Run unit tests with new syntaxes and themes
+      uses: actions-rs/cargo@v1
+      with:
+        command: test
+        args: --release
+    - name: Syntax highlighting regression test
+      run: tests/syntax-tests/regression_test.sh
+    - name: List of languages
+      run: bat --list-languages
+    - name: List of themes
+      run: bat --list-themes
 
   build:
     name: Build
@@ -35,8 +75,6 @@ jobs:
           # { os, target, cargo-options, features, use-cross, toolchain }
           - { os: ubuntu-latest  , target: arm-unknown-linux-gnueabihf , use-cross: use-cross }
           - { os: ubuntu-18.04   , target: aarch64-unknown-linux-gnu   , use-cross: use-cross }
-          - { os: ubuntu-18.04   , target: i586-unknown-linux-gnu      , use-cross: use-cross }
-          - { os: ubuntu-18.04   , target: i586-unknown-linux-musl     , use-cross: use-cross }
           - { os: ubuntu-18.04   , target: i686-unknown-linux-gnu      , use-cross: use-cross }
           - { os: ubuntu-18.04   , target: i686-unknown-linux-musl     , use-cross: use-cross }
           - { os: ubuntu-18.04   , target: x86_64-unknown-linux-gnu    , use-cross: use-cross }
@@ -48,8 +86,9 @@ jobs:
           # - { os: windows-latest , target: x86_64-pc-windows-gnu       }  ## disabled; linker errors (missing '_imp____acrt_iob_func')
           - { os: windows-latest , target: x86_64-pc-windows-msvc      }
     steps:
-    - uses: actions/checkout@v1
-    - name: Install any prerequisites
+    - name: Git checkout
+      uses: actions/checkout@v1
+    - name: Install prerequisites
       shell: bash
       run: |
         case ${{ matrix.job.target }} in
@@ -161,8 +200,9 @@ jobs:
       run: |
         mkdir -p '${{ steps.vars.outputs.STAGING }}'
         mkdir -p '${{ steps.vars.outputs.STAGING }}/${{ steps.vars.outputs.PKG_BASENAME }}'
+        mkdir -p '${{ steps.vars.outputs.STAGING }}/${{ steps.vars.outputs.PKG_BASENAME }}/autocomplete'
         mkdir -p '${{ steps.vars.outputs.STAGING }}/dpkg'
-    - name: rust toolchain ~ install
+    - name: Install Rust toolchain
       uses: actions-rs/toolchain@v1
       with:
         toolchain: ${{ steps.vars.outputs.TOOLCHAIN }}
@@ -190,7 +230,37 @@ jobs:
         use-cross: ${{ steps.vars.outputs.CARGO_USE_CROSS }}
         command: test
         args: --target=${{ matrix.job.target }} ${{ steps.vars.outputs.CARGO_TEST_OPTIONS}} ${{ matrix.job.cargo-options }}
-    - name: Archive executable artifacts
+    - name: bat test run
+      uses: actions-rs/cargo@v1
+      with:
+        use-cross: ${{ steps.vars.outputs.CARGO_USE_CROSS }}
+        command: run
+        args: --target=${{ matrix.job.target }} ${{ matrix.job.cargo-options }} -- --paging=never --color=always --theme=ansi-dark Cargo.toml src/config.rs
+    - name: Check features regex-onig
+      uses: actions-rs/cargo@v1
+      with:
+        use-cross: ${{ steps.vars.outputs.CARGO_USE_CROSS }}
+        command: check
+        args: --target=${{ matrix.job.target }} --verbose --lib --no-default-features --features regex-onig
+    - name: Check features regex-onig,git
+      uses: actions-rs/cargo@v1
+      with:
+        use-cross: ${{ steps.vars.outputs.CARGO_USE_CROSS }}
+        command: check
+        args: --target=${{ matrix.job.target }} --verbose --lib --no-default-features --features regex-onig,git
+    - name: Check features regex-onig,paging
+      uses: actions-rs/cargo@v1
+      with:
+        use-cross: ${{ steps.vars.outputs.CARGO_USE_CROSS }}
+        command: check
+        args: --target=${{ matrix.job.target }} --verbose --lib --no-default-features --features regex-onig,paging
+    - name: Check features regex-onig,git,paging
+      uses: actions-rs/cargo@v1
+      with:
+        use-cross: ${{ steps.vars.outputs.CARGO_USE_CROSS }}
+        command: check
+        args: --target=${{ matrix.job.target }} --verbose --lib --no-default-features --features regex-onig,git,paging
+    - name: Upload build artifacts
       uses: actions/upload-artifact@master
       with:
         name: ${{ env.PROJECT_NAME }}-${{ matrix.job.target }}
@@ -198,14 +268,23 @@ jobs:
     - name: Package
       shell: bash
       run: |
-        # binary
-        cp 'target/${{ matrix.job.target }}/release/${{ env.PROJECT_NAME }}${{ steps.vars.outputs.EXE_suffix }}' '${{ steps.vars.outputs.STAGING }}/${{ steps.vars.outputs.PKG_BASENAME }}/'
+        ARCHIVE_DIR='${{ steps.vars.outputs.STAGING }}/${{ steps.vars.outputs.PKG_BASENAME }}/'
+        COPYRIGHT_YEARS="2018 - "$(date "+%Y")
+        # Binary
+        cp 'target/${{ matrix.job.target }}/release/${{ env.PROJECT_NAME }}${{ steps.vars.outputs.EXE_suffix }}' "$ARCHIVE_DIR"
+
         # `strip` binary (if needed)
-        if [ -n "${{ steps.vars.outputs.STRIP }}" ]; then "${{ steps.vars.outputs.STRIP }}" '${{ steps.vars.outputs.STAGING }}/${{ steps.vars.outputs.PKG_BASENAME }}/${{ env.PROJECT_NAME }}${{ steps.vars.outputs.EXE_suffix }}' ; fi
-        # README and LICENSE
-        # * spell-checker:ignore EADME ICENSE
-        (shopt -s nullglob; for f in [R]"EADME"{,.*}; do cp $f '${{ steps.vars.outputs.STAGING }}/${{ steps.vars.outputs.PKG_BASENAME }}/' ; done)
-        (shopt -s nullglob; for f in [L]"ICENSE"{-*,}{,.*}; do cp $f '${{ steps.vars.outputs.STAGING }}/${{ steps.vars.outputs.PKG_BASENAME }}/' ; done)
+        if [ -n "${{ steps.vars.outputs.STRIP }}" ]; then "${{ steps.vars.outputs.STRIP }}" "$ARCHIVE_DIR/${{ env.PROJECT_NAME }}${{ steps.vars.outputs.EXE_suffix }}" ; fi
+
+        # Man page
+        cp 'target/${{ matrix.job.target }}/release/build/${{ env.PROJECT_NAME }}'-*/out/assets/manual/bat.1 "$ARCHIVE_DIR"
+
+        # README, LICENSE and CHANGELOG files
+        cp "README.md" "LICENSE-MIT" "LICENSE-APACHE" "CHANGELOG.md" "$ARCHIVE_DIR"
+
+        # Autocompletion files
+        cp 'target/${{ matrix.job.target }}/release/build/${{ env.PROJECT_NAME }}'-*/out/assets/completions/bat.fish "$ARCHIVE_DIR/autocomplete/${{ env.PROJECT_NAME }}.fish"
+
         # base compressed package
         pushd '${{ steps.vars.outputs.STAGING }}/' >/dev/null
         case ${{ matrix.job.target }} in
@@ -213,22 +292,103 @@ jobs:
           *) tar czf '${{ steps.vars.outputs.PKG_NAME }}' '${{ steps.vars.outputs.PKG_BASENAME }}'/* ;;
         esac;
         popd >/dev/null
-        # dpkg
+
+        # Debian package
         if [ -n "${{ steps.vars.outputs.DPKG_NAME }}" ]; then
           DPKG_DIR="${{ steps.vars.outputs.STAGING }}/dpkg"
-          # binary
+
+          # Binary
           install -Dm755 'target/${{ matrix.job.target }}/release/${{ env.PROJECT_NAME }}${{ steps.vars.outputs.EXE_suffix }}' "${DPKG_DIR}/usr/bin/${{ env.PROJECT_NAME }}${{ steps.vars.outputs.EXE_suffix }}"
           if [ -n "${{ steps.vars.outputs.STRIP }}" ]; then "${{ steps.vars.outputs.STRIP }}" "${DPKG_DIR}/usr/bin/${{ env.PROJECT_NAME }}${{ steps.vars.outputs.EXE_suffix }}" ; fi
+
+          # Work out shared library dependencies
+          # dpkg-shlibdeps requires debian/control file. Dummy it and clean up
+          mkdir "./debian"
+          touch "./debian/control"
+          case ${{ matrix.job.target }} in
+            aarch64-*-linux-*) DEPENDS="$(dpkg-shlibdeps -l/usr/aarch64-linux-gnu/lib -O "${DPKG_DIR}/usr/bin/${{ env.PROJECT_NAME }}" 2> /dev/null | sed 's/^shlibs:Depends=//')" ;;
+            arm-*-linux-*hf) DEPENDS="$(dpkg-shlibdeps -l/usr/arm-linux-gnueabihf/lib -O "${DPKG_DIR}/usr/bin/${{ env.PROJECT_NAME }}" 2> /dev/null | sed 's/^shlibs:Depends=//')" ;;
+            i686-*-linux-*) DEPENDS="$(dpkg-shlibdeps -O "${DPKG_DIR}/usr/bin/${{ env.PROJECT_NAME }}" 2> /dev/null | sed 's/^shlibs:Depends=//')" ;;
+            x86_64-*-linux-*) DEPENDS="$(dpkg-shlibdeps -O "${DPKG_DIR}/usr/bin/${{ env.PROJECT_NAME }}" 2> /dev/null | sed 's/^shlibs:Depends=//')" ;;
+          esac;
+          rm -rf "./debian"
+
+          # Man page
+          install -Dm644 'target/${{ matrix.job.target }}/release/build/${{ env.PROJECT_NAME }}'-*/out/assets/manual/bat.1 "${DPKG_DIR}/usr/share/man/man1/${{ env.PROJECT_NAME }}.1"
+          gzip -n --best "${DPKG_DIR}/usr/share/man/man1/${{ env.PROJECT_NAME }}.1"
+
+          # Autocompletion files
+          install -Dm644 'target/${{ matrix.job.target }}/release/build/${{ env.PROJECT_NAME }}'-*/out/assets/completions/bat.fish "${DPKG_DIR}/usr/share/fish/vendor_completions.d/${{ env.PROJECT_NAME }}.fish"
+
           # README and LICENSE
-          (shopt -s nullglob; for f in [R]"EADME"{,.*}; do install -Dm644 "$f" "${DPKG_DIR}/usr/share/doc/${{ env.PROJECT_NAME }}/$f" ; done)
-          (shopt -s nullglob; for f in [L]"ICENSE"{-*,}{,.*}; do install -Dm644 "$f" "${DPKG_DIR}/usr/share/doc/${{ env.PROJECT_NAME }}/$f" ; done)
+          install -Dm644 "README.md" "${DPKG_DIR}/usr/share/doc/${{ steps.vars.outputs.DPKG_BASENAME }}/README.md"
+          install -Dm644 "LICENSE-MIT" "${DPKG_DIR}/usr/share/doc/${{ steps.vars.outputs.DPKG_BASENAME }}/LICENSE-MIT"
+          install -Dm644 "LICENSE-APACHE" "${DPKG_DIR}/usr/share/doc/${{ steps.vars.outputs.DPKG_BASENAME }}/LICENSE-APACHE"
+          install -Dm644 "CHANGELOG.md" "${DPKG_DIR}/usr/share/doc/${{ steps.vars.outputs.DPKG_BASENAME }}/changelog"
+          gzip -n --best "${DPKG_DIR}/usr/share/doc/${{ steps.vars.outputs.DPKG_BASENAME }}/changelog"
+
+          cat > "${DPKG_DIR}/usr/share/doc/${{ steps.vars.outputs.DPKG_BASENAME }}/copyright" <<EOF
+        Format: http://www.debian.org/doc/packaging-manuals/copyright-format/1.0/
+        Upstream-Name: ${{ env.PROJECT_NAME }}
+        Source: ${{ env.PROJECT_HOMEPAGE }}
+
+        Files: *
+        Copyright: ${{ env.PROJECT_MAINTAINER }}
+        Copyright: $COPYRIGHT_YEARS ${{ env.PROJECT_MAINTAINER }}
+        License: Apache-2.0 or MIT
+
+        License: Apache-2.0
+         On Debian systems, the complete text of the Apache-2.0 can be found in the
+         file /usr/share/common-licenses/Apache-2.0.
+
+        License: MIT
+         Permission is hereby granted, free of charge, to any
+         person obtaining a copy of this software and associated
+         documentation files (the "Software"), to deal in the
+         Software without restriction, including without
+         limitation the rights to use, copy, modify, merge,
+         publish, distribute, sublicense, and/or sell copies of
+         the Software, and to permit persons to whom the Software
+         is furnished to do so, subject to the following
+         conditions:
+         .
+         The above copyright notice and this permission notice
+         shall be included in all copies or substantial portions
+         of the Software.
+         .
+         THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF
+         ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED
+         TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A
+         PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT
+         SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY
+         CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION
+         OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR
+         IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
+         DEALINGS IN THE SOFTWARE.
+        EOF
+          chmod 644 "${DPKG_DIR}/usr/share/doc/${{ steps.vars.outputs.DPKG_BASENAME }}/copyright"
+
           # control file
           mkdir -p "${DPKG_DIR}/DEBIAN"
-          printf "Package: ${{ steps.vars.outputs.DPKG_BASENAME }}\nVersion: ${{ steps.vars.outputs.DPKG_VERSION }}\nSection: utils\nPriority: optional\nMaintainer: ${{ env.PROJECT_AUTH }}\nArchitecture: ${{ steps.vars.outputs.DPKG_ARCH }}\nProvides: ${{ env.PROJECT_NAME }}\nConflicts: ${{ steps.vars.outputs.DPKG_CONFLICTS }}\nDescription: ${{ env.PROJECT_DESC }}\n" > "${DPKG_DIR}/DEBIAN/control"
+          cat > "${DPKG_DIR}/DEBIAN/control" <<EOF
+        Package: ${{ steps.vars.outputs.DPKG_BASENAME }}
+        Version: ${{ steps.vars.outputs.DPKG_VERSION }}
+        Section: utils
+        Priority: optional
+        Maintainer: ${{ env.PROJECT_MAINTAINER }}
+        Homepage: ${{ env.PROJECT_HOMEPAGE }}
+        Architecture: ${{ steps.vars.outputs.DPKG_ARCH }}
+        Depends: $DEPENDS
+        Provides: ${{ env.PROJECT_NAME }}
+        Conflicts: ${{ steps.vars.outputs.DPKG_CONFLICTS }}
+        Description: cat(1) clone with wings.
+         A cat(1) clone with syntax highlighting and Git integration.
+        EOF
+
           # build dpkg
           fakeroot dpkg-deb --build "${DPKG_DIR}" "${{ steps.vars.outputs.STAGING }}/${{ steps.vars.outputs.DPKG_NAME }}"
         fi
-    - name: Publish
+    - name: Publish archives and packages
       uses: softprops/action-gh-release@v1
       if: steps.vars.outputs.DEPLOY
       with:
