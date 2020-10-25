@@ -1,21 +1,54 @@
 # unreleased
 
+- Add Note to refer to see detailed help with --help (and vice versa with -h). see #1215 (@henil)
+
+## Features
+
+- Adjust pager configuration to comply with `--wrap=never`, see #1255 (@gahag)
+
+## Bugfixes
+
+## Other
+
+## Syntaxes
+
+- Manpage syntax highlighting has been improved, see #1315 (@keith-hall)
+
+## New themes
+
+- Coldark, see #1329 (@armandphilippot)
+
+## `bat` as a library
+
+## Packaging
+
+# v0.16.0
+
 ## Features
 
 - Added support for the `NO_COLOR` environment variable, see #1021 and #1031 (@eth-p)
-- Added `-P` short flag to disable paging, revised man page description, see #1075 and #1082 (@LordFlashmeow) 
+- Added `-P` short flag to disable paging, see #1075 and #1082 (@LordFlashmeow)
+- Added `--force-colorization`/`-f` flag to provide an alias for forced color and decoration output, see #1141 (@alexanderkarlis)
 
 ## Bugfixes
 
 - Fixed non-printable characters display for redirected output, see #1061 (@gsomix)
+- Handle file extension conflicts in `--list-languages`, see #1076 and #1135 (@Kienyew)
 
 ## Other
+
 - Switched to "·" (U+00B7) Middle Dot from "•" (U+2022) Bullet for non-printing spaces, see #1056 and #1100 (@LordFlashmeow)
+- Added zsh shell completion script, see #1136 (@Kienyew)
+- Improved `--help` text (@sharkdp)
+- Added custom languages/themes sections to manpage (@eth-p)
 
 ## Syntaxes
 
 - Update AsciiDoc syntax, see #1034 (@rxt1077)
 - GLSL (@caioalonso)
+- Add Nginx and Apache config file syntax, see #1137 (@kjmph, @niklasmohrin)
+- Use `fstab` syntax for `crypttab` files, see #1073 (@sharkdp)
+- Support syntax highlighting for files in `$XDG_CONFIG_HOME/git/`, see #1191 (@ahmedelgabri)
 
 ## New themes
 
@@ -29,6 +62,8 @@
 - **Breaking:** `Input::theme_preview_file` is no longer available. (@eth-p)
 
 ## Packaging
+
+- Removed build dependency on `liquid` (@sharkdp).
 
 # v0.15.4
 
