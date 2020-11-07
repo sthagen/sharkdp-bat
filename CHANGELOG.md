@@ -1,18 +1,26 @@
 # unreleased
 
-- Add Note to refer to see detailed help with --help (and vice versa with -h). see #1215 (@henil)
 
 ## Features
 
 - Adjust pager configuration to comply with `--wrap=never`, see #1255 (@gahag)
+- Added a new `--style` value, `rule`, which adds a simple horizontal ruled line between files, see #1276 (@tommilligan)
 
 ## Bugfixes
 
+- Throws an error when `bat` is being used as `pager`, see #1343 (@adrian-rivera)
+- Bash syntax highlighting not selected for `*.ebuild` and `*.eclass` files, see #1292 (@sharkdp)
+- Fix `zsh` completion when using `-p`, see #1320 (@xzfc)
+
 ## Other
+
+- Add note to refer to see detailed help with `--help` (and vice versa with `-h`), see #1215 (@henil)
+- Add a `Contributors` section to `README`, see #1348 (@adrian-rivera)
 
 ## Syntaxes
 
 - Manpage syntax highlighting has been improved, see #1315 (@keith-hall)
+- Add Svelte file syntax, see #1285 (@kjmph)
 
 ## New themes
 
