@@ -38,14 +38,14 @@ characters:
 
 ### Automatic paging
 
-`bat` can pipe its own output to a pager (e.g `less`) if the output is too large for one screen.
+By default, `bat` pipes its own output to a pager (e.g `less`) if the output is too large for one screen.
+If you would rather `bat` work like `cat` all the time (never page output), you can set `--paging=never` as an option, either on the command line or in your configuration file.
+If you intend to alias `cat` to `bat` in your shell configuration, you can use `alias cat='bat --paging=never'` to preserve the default behavior.
 
-### File concatenation
+#### File concatenation
 
-Oh.. you can also use it to concatenate files :wink:. Whenever
-`bat` detects a non-interactive terminal (i.e. when you pipe into another process
-or into a file), `bat` will act as a drop-in replacement for `cat` and
-fall back to printing the plain file contents.
+Even with a pager set, you can still use `bat` to concatenate files :wink:.
+Whenever `bat` detects a non-interactive terminal (i.e. when you pipe into another process or into a file), `bat` will act as a drop-in replacement for `cat` and fall back to printing the plain file contents, regardless of the `--pager` option's value.
 
 ## How to use
 
@@ -211,7 +211,7 @@ the most recent release of `bat`, download the latest `.deb` package from the
 [release page](https://github.com/sharkdp/bat/releases) and install it via:
 
 ```bash
-sudo dpkg -i bat_0.16.0_amd64.deb  # adapt version number and architecture
+sudo dpkg -i bat_0.17.1_amd64.deb  # adapt version number and architecture
 ```
 
 ### On Alpine Linux
@@ -256,6 +256,13 @@ You can install `bat` via xbps-install:
 xbps-install -S bat
 ```
 
+### On Termux
+
+You can install `bat` via pkg:
+```bash
+pkg install bat
+```
+
 ### On FreeBSD
 
 You can install a precompiled [`bat` package](https://www.freshports.org/textproc/bat) with pkg:
@@ -286,6 +293,15 @@ You can install `bat` with zypper:
 ```bash
 zypper install bat
 ```
+
+### Via snap package
+
+```
+sudo snap install batcat
+```
+
+[Get it from the Snap Store](https://snapcraft.io/batcat)
+
 
 ### On macOS (or Linux) via Homebrew
 

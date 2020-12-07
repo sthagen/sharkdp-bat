@@ -3,12 +3,39 @@
 
 ## Features
 
-- Adjust pager configuration to comply with `--wrap=never`, see #1255 (@gahag)
-- Added a new `--style` value, `rule`, which adds a simple horizontal ruled line between files, see #1276 (@tommilligan)
+## Bugfixes
+
+## Other
+
+## Syntaxes
+
+## New themes
+
+## `bat` as a library
+
+## Packaging
+
+- `bat` is now available on snapstore with package name called `batcat`, see #1401 (@purveshpatel511)
+
+
+# v0.17.1
 
 ## Bugfixes
 
-- Throws an error when `bat` is being used as `pager`, see #1343 (@adrian-rivera)
+- Running `bat` without arguments fails ("output file is also an input"), see #1396
+
+
+# v0.17.0
+
+## Features
+
+- Added a new `--style` value, `rule`, which adds a simple horizontal ruled line between files, see #1276 (@tommilligan)
+- Pass `-S` ("chop long lines") to `less` if `--wrap=never` is set in `bat`, see #1255 (@gahag)
+
+## Bugfixes
+
+- Detect infinite loop when input and output are the same, see #1193 and #1197 (@niklasmohrin)
+- Throw an error when `bat` is being used as `pager`, see #1343 (@adrian-rivera)
 - Bash syntax highlighting not selected for `*.ebuild` and `*.eclass` files, see #1292 (@sharkdp)
 - Fix `zsh` completion when using `-p`, see #1320 (@xzfc)
 
@@ -26,9 +53,6 @@
 
 - Coldark, see #1329 (@armandphilippot)
 
-## `bat` as a library
-
-## Packaging
 
 # v0.16.0
 
