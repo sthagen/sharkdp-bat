@@ -328,7 +328,8 @@ pub fn build_app(interactive_output: bool) -> ClapApp<'static, 'static> {
                     "Map a glob pattern to an existing syntax name. The glob pattern is matched \
                      on the full path and the filename. For example, to highlight *.build files \
                      with the Python syntax, use -m '*.build:Python'. To highlight files named \
-                     '.myignore' with the Git Ignore syntax, use -m '.myignore:Git Ignore'.",
+                     '.myignore' with the Git Ignore syntax, use -m '.myignore:Git Ignore'. Note \
+                     that the right-hand side is the *name* of the syntax, not a file extension.",
                 )
                 .takes_value(true),
         )
@@ -476,6 +477,13 @@ pub fn build_app(interactive_output: bool) -> ClapApp<'static, 'static> {
                 .long("cache-dir")
                 .hidden(true)
                 .help("Show bat's cache directory."),
+        )
+        .arg(
+            Arg::with_name("diagnostic")
+                .long("diagnostic")
+                .alias("diagnostics")
+                .hidden_short_help(true)
+                .help("Show diagnostic information for bug reports.")
         )
         .help_message("Print this help message.")
         .version_message("Show version information.");

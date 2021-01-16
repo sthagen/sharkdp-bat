@@ -1,11 +1,27 @@
-use assert_cmd::Command;
+use assert_cmd::assert::OutputAssertExt;
+use assert_cmd::cargo::CommandCargoExt;
 use predicates::{prelude::predicate, str::PredicateStrExt};
+use serial_test::serial;
+use std::fs::File;
 use std::path::Path;
+use std::process::{Command, Stdio};
 use std::str::from_utf8;
+
+#[cfg(unix)]
+use std::time::Duration;
+
+mod utils;
+use utils::mocked_pagers;
 
 const EXAMPLES_DIR: &str = "tests/examples";
 
-fn bat_with_config() -> Command {
+#[cfg(unix)]
+const SAFE_CHILD_PROCESS_CREATION_TIME: Duration = Duration::from_millis(100);
+
+#[cfg(unix)]
+const CHILD_WAIT_TIMEOUT: Duration = Duration::from_secs(15);
+
+fn bat_raw_command() -> Command {
     let mut cmd = Command::cargo_bin("bat").unwrap();
     cmd.current_dir("tests/examples");
     cmd.env_remove("PAGER");
@@ -17,7 +33,11 @@ fn bat_with_config() -> Command {
     cmd
 }
 
-fn bat() -> Command {
+fn bat_with_config() -> assert_cmd::Command {
+    assert_cmd::Command::from_std(bat_raw_command())
+}
+
+fn bat() -> assert_cmd::Command {
     let mut cmd = bat_with_config();
     cmd.arg("--no-config");
     cmd
@@ -187,6 +207,80 @@ fn line_range_multiple() {
         .assert()
         .success()
         .stdout("line 1\nline 2\nline 4\n");
+}
+
+#[test]
+fn basic_io_cycle() {
+    let file_out = Stdio::from(File::open("tests/examples/cycle.txt").unwrap());
+    bat_raw_command()
+        .arg("test.txt")
+        .arg("cycle.txt")
+        .stdout(file_out)
+        .assert()
+        .failure();
+}
+
+#[test]
+fn stdin_to_stdout_cycle() {
+    let file_out = Stdio::from(File::open("tests/examples/cycle.txt").unwrap());
+    let file_in = Stdio::from(File::open("tests/examples/cycle.txt").unwrap());
+    bat_raw_command()
+        .stdin(file_in)
+        .arg("test.txt")
+        .arg("-")
+        .stdout(file_out)
+        .assert()
+        .failure();
+}
+
+#[cfg(unix)]
+#[test]
+fn no_args_doesnt_break() {
+    use std::io::Write;
+    use std::os::unix::io::FromRawFd;
+    use std::thread;
+
+    use clircle::nix::pty::{openpty, OpenptyResult};
+    use wait_timeout::ChildExt;
+
+    // To simulate bat getting started from the shell, a process is created with stdin and stdout
+    // as the slave end of a pseudo terminal. Although both point to the same "file", bat should
+    // not exit, because in this case it is safe to read and write to the same fd, which is why
+    // this test exists.
+    let OpenptyResult { master, slave } = openpty(None, None).expect("Couldn't open pty.");
+    let mut master = unsafe { File::from_raw_fd(master) };
+    let stdin = unsafe { Stdio::from_raw_fd(slave) };
+    let stdout = unsafe { Stdio::from_raw_fd(slave) };
+
+    let mut child = bat_raw_command()
+        .stdin(stdin)
+        .stdout(stdout)
+        .spawn()
+        .expect("Failed to start.");
+
+    // Some time for the child process to start and to make sure, that we can poll the exit status.
+    // Although this waiting period is not necessary, it is best to keep it in and be absolutely
+    // sure, that the try_wait does not error later.
+    thread::sleep(SAFE_CHILD_PROCESS_CREATION_TIME);
+
+    // The child process should be running and waiting for input,
+    // therefore no exit status should be available.
+    let exit_status = child
+        .try_wait()
+        .expect("Error polling exit status, this should never happen.");
+    assert!(exit_status.is_none());
+
+    // Write Ctrl-D (end of transmission) to the pty.
+    master
+        .write_all(&[0x04])
+        .expect("Couldn't write EOT character to master end.");
+
+    let exit_status = child
+        .wait_timeout(CHILD_WAIT_TIMEOUT)
+        .expect("Error polling exit status, this should never happen.")
+        .expect("Exit status not set, but the child should have exited already.");
+
+    assert!(exit_status.success());
 }
 
 #[test]
@@ -406,13 +500,114 @@ fn pager_disable() {
 }
 
 #[test]
+fn env_var_pager_value_bat() {
+    bat()
+        .env("PAGER", "bat")
+        .arg("--paging=always")
+        .arg("test.txt")
+        .assert()
+        .success()
+        .stdout(predicate::eq("hello world\n").normalize());
+}
+
+#[test]
+fn env_var_bat_pager_value_bat() {
+    bat()
+        .env("BAT_PAGER", "bat")
+        .arg("--paging=always")
+        .arg("test.txt")
+        .assert()
+        .failure()
+        .stderr(predicate::str::contains("bat as a pager is disallowed"));
+}
+
+#[test]
 fn pager_value_bat() {
     bat()
         .arg("--pager=bat")
         .arg("--paging=always")
         .arg("test.txt")
         .assert()
-        .failure();
+        .failure()
+        .stderr(predicate::str::contains("bat as a pager is disallowed"));
+}
+
+/// We shall use less instead of most if PAGER is used since PAGER
+/// is a generic env var
+#[test]
+#[serial] // Because of PATH
+fn pager_most_from_pager_env_var() {
+    mocked_pagers::with_mocked_versions_of_more_and_most_in_path(|| {
+        // If the output is not "I am most" then we know 'most' is not used
+        bat()
+            .env("PAGER", mocked_pagers::from("most"))
+            .arg("--paging=always")
+            .arg("test.txt")
+            .assert()
+            .success()
+            .stdout(predicate::eq("hello world\n").normalize());
+    });
+}
+
+/// If the bat-specific BAT_PAGER is used, obey the wish of the user
+/// and allow 'most'
+#[test]
+#[serial] // Because of PATH
+fn pager_most_from_bat_pager_env_var() {
+    mocked_pagers::with_mocked_versions_of_more_and_most_in_path(|| {
+        bat()
+            .env("BAT_PAGER", mocked_pagers::from("most"))
+            .arg("--paging=always")
+            .arg("test.txt")
+            .assert()
+            .success()
+            .stdout(predicate::str::contains("I am most"));
+    });
+}
+
+/// Same reasoning with --pager as with BAT_PAGER
+#[test]
+#[serial] // Because of PATH
+fn pager_most_from_pager_arg() {
+    mocked_pagers::with_mocked_versions_of_more_and_most_in_path(|| {
+        bat()
+            .arg("--paging=always")
+            .arg(format!("--pager={}", mocked_pagers::from("most")))
+            .arg("test.txt")
+            .assert()
+            .success()
+            .stdout(predicate::str::contains("I am most"));
+    });
+}
+
+/// Make sure the logic for 'most' applies even if an argument is passed
+#[test]
+#[serial] // Because of PATH
+fn pager_most_with_arg() {
+    mocked_pagers::with_mocked_versions_of_more_and_most_in_path(|| {
+        bat()
+            .env("PAGER", format!("{} -w", mocked_pagers::from("most")))
+            .arg("--paging=always")
+            .arg("test.txt")
+            .assert()
+            .success()
+            .stdout(predicate::eq("hello world\n").normalize());
+    });
+}
+
+/// Sanity check that 'more' is treated like 'most'
+#[test]
+#[serial] // Because of PATH
+fn pager_more() {
+    mocked_pagers::with_mocked_versions_of_more_and_most_in_path(|| {
+        bat()
+            .env("PAGER", mocked_pagers::from("more"))
+            .arg("--paging=always")
+            .arg("test.txt")
+            .assert()
+            .success()
+            .stdout(predicate::eq("hello world\n").normalize());
+    });
 }
 
 #[test]
@@ -436,6 +631,17 @@ fn alias_pager_disable_long_overrides_short() {
         .assert()
         .success()
         .stdout(predicate::eq("pager-output\n").normalize());
+}
+
+#[test]
+fn pager_failed_to_parse() {
+    bat()
+        .env("BAT_PAGER", "mismatched-quotes 'a")
+        .arg("--paging=always")
+        .arg("test.txt")
+        .assert()
+        .failure()
+        .stderr(predicate::str::contains("Could not parse pager command"));
 }
 
 #[test]
@@ -811,5 +1017,43 @@ fn show_all_mode() {
         .arg("nonprintable.txt")
         .assert()
         .stdout("hello·world␊\n├──┤␍␀␇␈␛")
+        .stderr("");
+}
+
+#[test]
+fn plain_mode_does_not_add_nonexisting_newline() {
+    bat()
+        .arg("--paging=never")
+        .arg("--color=never")
+        .arg("--decorations=always")
+        .arg("--style=plain")
+        .arg("single-line.txt")
+        .assert()
+        .success()
+        .stdout("Single Line");
+}
+
+// Regression test for https://github.com/sharkdp/bat/issues/299
+#[test]
+fn grid_for_file_without_newline() {
+    bat()
+        .arg("--paging=never")
+        .arg("--color=never")
+        .arg("--terminal-width=80")
+        .arg("--wrap=never")
+        .arg("--decorations=always")
+        .arg("--style=full")
+        .arg("single-line.txt")
+        .assert()
+        .success()
+        .stdout(
+            "\
+───────┬────────────────────────────────────────────────────────────────────────
+       │ File: single-line.txt
+───────┼────────────────────────────────────────────────────────────────────────
+   1   │ Single Line
+───────┴────────────────────────────────────────────────────────────────────────
+",
+        )
         .stderr("");
 }

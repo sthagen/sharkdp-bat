@@ -163,6 +163,7 @@ bat main.cpp | xclip
 export MANPAGER="sh -c 'col -bx | bat -l man -p'"
 man 2 select
 ```
+(replace `bat` by `batcat` if you are on Debian or Ubuntu)
 
 It might also be necessary to set `MANROFFOPT="-c"` if you experience
 formatting problems.
@@ -180,7 +181,7 @@ The [`prettybat`](https://github.com/eth-p/bat-extras/blob/master/doc/prettybat.
 
 ## Installation
 
-[![Packaging status](https://repology.org/badge/vertical-allrepos/bat.svg)](https://repology.org/project/bat/versions)
+[![Packaging status](https://repology.org/badge/vertical-allrepos/bat-cat.svg)](https://repology.org/project/bat-cat/versions)
 
 ### On Ubuntu (using `apt`)
 *... and other Debian-based Linux distributions.*
@@ -196,7 +197,7 @@ If your Ubuntu/Debian installation is new enough you can simply run:
 apt install bat
 ```
 
-If you install `bat` this way, please note that the executable may be installed as `batcat` instead of `bat` (due to [a name
+**Important**: If you install `bat` this way, please note that the executable may be installed as `batcat` instead of `bat` (due to [a name
 clash with another package](https://github.com/sharkdp/bat/issues/982)). You can set up a `bat -> batcat` symlink or alias to prevent any issues that may come up because of this and to be consistent with other distributions:
 ``` bash
 mkdir -p ~/.local/bin
@@ -356,7 +357,7 @@ binaries are also available: look for archives with `musl` in the file name.
 
 ### From source
 
-If you want to build `bat` from source, you need Rust 1.40 or
+If you want to build `bat` from source, you need Rust 1.42 or
 higher. You can then use `cargo` to build everything:
 
 ```bash
@@ -390,12 +391,11 @@ You can also use a custom theme by following the
 
 ### 8-bit themes
 
-`bat` has four themes that always use [8-bit colors](https://en.wikipedia.org/wiki/ANSI_escape_code#Colors),
+`bat` has three themes that always use [8-bit colors](https://en.wikipedia.org/wiki/ANSI_escape_code#Colors),
 even when truecolor support is available:
 
-- `ansi-dark` looks decent on any terminal with a dark background. It uses 3-bit colors: black, red,
-  green, yellow, blue, magenta, cyan, and white.
-- `ansi-light` is like `ansi-dark`, but for terminals with a light background.
+- `ansi` looks decent on any terminal. It uses 3-bit colors: black, red, green,
+  yellow, blue, magenta, cyan, and white.
 - `base16` is designed for [base16](https://github.com/chriskempson/base16) terminal themes. It uses
   4-bit colors (3-bit colors plus bright variants) in accordance with the
   [base16 styling guidelines](https://github.com/chriskempson/base16/blob/master/styling.md).
@@ -482,7 +482,7 @@ You can add new (or change existing) file name patterns using the `--map-syntax`
 command line option. The option takes an argument of the form `pattern:syntax` where
 `pattern` is a glob pattern that is matched against the file name and
 the absolute file path. The `syntax` part is the full name of a supported language
-(use `bat --list-languages` for an overview)full .
+(use `bat --list-languages` for an overview).
 
 Note: You probably want to use this option as an entry in `bat`s configuration file instead
 of passing it on the command line (see below).
@@ -500,7 +500,7 @@ Example: To open all files called `.ignore` (exact match) with the "Git Ignore" 
 Example: To open all `.conf` files in subfolders of `/etc/apache2` with the "Apache Conf"
 syntax, use (this mapping is already built in):
 ```bash
--map-syntax='/etc/apache2/**/*.conf:Apache Conf'
+--map-syntax='/etc/apache2/**/*.conf:Apache Conf'
 ```
 
 ### Using a different pager
@@ -692,6 +692,11 @@ bash assets/create.sh
 cargo install --path . --locked --force
 ```
 
+If you want to build an application that uses `bat`s pretty-printing
+features as a library, check out the [the API documentation](https://docs.rs/bat/).
+Note that you have to use either `regex-onig` or `regex-fancy` as a feature
+when you depend on `bat` as a library.
+
 ## Contributing
 
 Take a look at the [`CONTRIBUTING.md`](CONTRIBUTING.md) guide.
@@ -701,6 +706,7 @@ Take a look at the [`CONTRIBUTING.md`](CONTRIBUTING.md) guide.
 - [sharkdp](https://github.com/sharkdp)
 - [eth-p](https://github.com/eth-p)
 - [keith-hall](https://github.com/keith-hall)
+- [Enselic](https://github.com/Enselic)
 
 ## Project goals and alternatives
 

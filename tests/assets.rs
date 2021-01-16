@@ -8,7 +8,7 @@ fn all_themes_are_present() {
     let assets = HighlightingAssets::from_binary();
 
     let mut themes: Vec<_> = assets.themes().collect();
-    themes.sort();
+    themes.sort_unstable();
 
     assert_eq!(
         themes,
@@ -30,13 +30,11 @@ fn all_themes_are_present() {
             "Solarized (light)",
             "Sublime Snazzy",
             "TwoDark",
-            "ansi-dark",
-            "ansi-light",
+            "ansi",
             "base16",
             "base16-256",
-            "gruvbox",
+            "gruvbox-dark",
             "gruvbox-light",
-            "gruvbox-white",
             "zenburn"
         ]
     );

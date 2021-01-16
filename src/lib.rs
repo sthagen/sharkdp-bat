@@ -19,6 +19,8 @@
 //!     .unwrap();
 //! ```
 
+mod macros;
+
 pub mod assets;
 pub mod assets_metadata;
 pub mod config;
@@ -30,6 +32,8 @@ pub mod input;
 mod less;
 pub mod line_range;
 mod output;
+#[cfg(feature = "paging")]
+mod pager;
 #[cfg(feature = "paging")]
 pub(crate) mod paging;
 mod preprocessor;
