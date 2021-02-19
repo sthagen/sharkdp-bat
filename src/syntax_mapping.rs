@@ -42,6 +42,9 @@ impl<'a> SyntaxMapping<'a> {
                 MappingTarget::MapTo("Bourne Again Shell (bash)"),
             )
             .unwrap();
+        mapping
+            .insert("*.pac", MappingTarget::MapTo("JavaScript (Babel)"))
+            .unwrap();
 
         // See #1008
         mapping
@@ -52,6 +55,11 @@ impl<'a> SyntaxMapping<'a> {
         // see #1131 and #1137
         mapping
             .insert("*.conf", MappingTarget::MapToUnknown)
+            .unwrap();
+
+        // Re-insert a mapping for resolv.conf, see #1510
+        mapping
+            .insert("resolv.conf", MappingTarget::MapTo("resolv"))
             .unwrap();
 
         for glob in &[

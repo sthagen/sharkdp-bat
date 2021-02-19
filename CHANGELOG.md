@@ -15,6 +15,7 @@
 - If plain mode is set and wrap is not explicitly opted in, long lines will no be truncated, see #1426
 - If `PAGER` (but not `BAT_PAGER` or `--pager`) is `more` or `most`, silently use `less` instead to ensure support for colors, see #1063 (@Enselic)
 - If `PAGER` is `bat`, silently use `less` to prevent recursion. For `BAT_PAGER` or `--pager`, exit with error, see #1413 (@Enselic)
+- Manpage highlighting fix, see #1511 (@keith-hall)
 
 ## Other
 
@@ -28,6 +29,7 @@
 - Added Lean syntax, see #1446 (@Julian)
 - Added `.resource` extension for Robot Framework files, see #1386
 - Added `gnuplot` syntax, see #1431 (@sharkdp)
+- Highlight *.pac (Proxy auto-config) files as JavaScript, see #1515 (@sharkdp)
 
 ## New themes
 
@@ -41,10 +43,6 @@
    - `input_from_bytes_with_name`
    - `input_from_reader_with_name`
    - `vcs_modification_markers` (if the `git` feature is not enabled)
-
-## Packaging
-
-- `bat` is now available on snapstore with package name called `batcat`, see #1401 (@purveshpatel511)
 
 
 # v0.17.1

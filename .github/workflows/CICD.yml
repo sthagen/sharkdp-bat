@@ -2,6 +2,7 @@ name: CICD
 
 env:
   MIN_SUPPORTED_RUST_VERSION: "1.42.0"
+  CICD_INTERMEDIATES_DIR: "_cicd-intermediates"
 
 on: [push, pull_request]
 
@@ -109,26 +110,6 @@ jobs:
         echo "PROJECT_VERSION=$(sed -n 's/^version = "\(.*\)"/\1/p' Cargo.toml | head -n1)" >> $GITHUB_ENV
         echo "PROJECT_MAINTAINER=$(sed -n 's/^authors = \["\(.*\)"\]/\1/p' Cargo.toml)" >> $GITHUB_ENV
         echo "PROJECT_HOMEPAGE=$(sed -n 's/^homepage = "\(.*\)"/\1/p' Cargo.toml)" >> $GITHUB_ENV
-    - name: Initialize workflow variables
-      id: vars
-      shell: bash
-      run: |
-        # staging directory
-        STAGING='_staging'
-        echo ::set-output name=STAGING::${STAGING}
-        # determine EXE suffix
-        EXE_suffix="" ; case ${{ matrix.job.target }} in *-pc-windows-*) EXE_suffix=".exe" ;; esac;
-        echo ::set-output name=EXE_suffix::${EXE_suffix}
-        unset IS_RELEASE ; if [[ $GITHUB_REF =~ ^refs/tags/v[0-9].* ]]; then IS_RELEASE='true' ; fi
-        echo ::set-output name=IS_RELEASE::${IS_RELEASE}
-        # target-specific options
-        # # * test only library unit tests and binary for arm-type targets
-        unset CARGO_TEST_OPTIONS
-        unset CARGO_TEST_OPTIONS ; case ${{ matrix.job.target }} in arm-* | aarch64-*) CARGO_TEST_OPTIONS="--lib --bin ${PROJECT_NAME}" ;; esac;
-        echo ::set-output name=CARGO_TEST_OPTIONS::${CARGO_TEST_OPTIONS}
-        # * executable for `strip`?
-        STRIP="strip" ; case ${{ matrix.job.target }} in arm-unknown-linux-gnueabihf) STRIP="arm-linux-gnueabihf-strip" ;; aarch64-unknown-linux-gnu) STRIP="aarch64-linux-gnu-strip" ;; *-pc-windows-msvc) STRIP="" ;; esac;
-        echo ::set-output name=STRIP::${STRIP}
     - name: Install Rust toolchain
       uses: actions-rs/toolchain@v1
       with:
@@ -150,25 +131,68 @@ jobs:
       with:
         use-cross: ${{ matrix.job.use-cross }}
         command: build
-        args: --release --target=${{ matrix.job.target }} ${{ matrix.job.cargo-options }}
+        args: --release --target=${{ matrix.job.target }}
+    - name: Strip release bin
+      id: strip
+      shell: bash
+      run: |
+        # Figure out suffix of binary
+        EXE_suffix=""
+        case ${{ matrix.job.target }} in
+          *-pc-windows-*) EXE_suffix=".exe" ;;
+        esac;
+
+        # Figure out what strip tool to use if any
+        STRIP="strip"
+        case ${{ matrix.job.target }} in
+          arm-unknown-linux-gnueabihf) STRIP="arm-linux-gnueabihf-strip" ;;
+          aarch64-unknown-linux-gnu) STRIP="aarch64-linux-gnu-strip" ;;
+          *-pc-windows-msvc) STRIP="" ;;
+        esac;
+
+        # Setup paths
+        BIN_DIR="${{ env.CICD_INTERMEDIATES_DIR }}/stripped-release-bin/"
+        mkdir -p "${BIN_DIR}"
+        BIN_NAME="${{ env.PROJECT_NAME }}${EXE_suffix}"
+        BIN_PATH="${BIN_DIR}/${BIN_NAME}"
+
+        # Copy the release build binary to the result location
+        cp "target/${{ matrix.job.target }}/release/${BIN_NAME}" "${BIN_DIR}"
+
+        # Also strip if possible
+        if [ -n "${STRIP}" ]; then
+          "${STRIP}" "${BIN_PATH}"
+        fi
+
+        # Let subsequent steps know where to find the (stripped) bin
+        echo ::set-output name=BIN_PATH::${BIN_PATH}
+        echo ::set-output name=BIN_NAME::${BIN_NAME}
+    - name: Calculate test options
+      id: test-options
+      shell: bash
+      run: |
+        # test only library unit tests and binary for arm-type targets
+        unset CARGO_TEST_OPTIONS
+        unset CARGO_TEST_OPTIONS ; case ${{ matrix.job.target }} in arm-* | aarch64-*) CARGO_TEST_OPTIONS="--lib --bin ${PROJECT_NAME}" ;; esac;
+        echo ::set-output name=CARGO_TEST_OPTIONS::${CARGO_TEST_OPTIONS}
     - name: Test
       uses: actions-rs/cargo@v1
       with:
         use-cross: ${{ matrix.job.use-cross }}
         command: test
-        args: --target=${{ matrix.job.target }} ${{ steps.vars.outputs.CARGO_TEST_OPTIONS}} ${{ matrix.job.cargo-options }}
+        args: --target=${{ matrix.job.target }} ${{ steps.test-options.outputs.CARGO_TEST_OPTIONS}}
     - name: bat test run
       uses: actions-rs/cargo@v1
       with:
         use-cross: ${{ matrix.job.use-cross }}
         command: run
-        args: --target=${{ matrix.job.target }} ${{ matrix.job.cargo-options }} -- --paging=never --color=always --theme=ansi Cargo.toml src/config.rs
+        args: --target=${{ matrix.job.target }} -- --paging=never --color=always --theme=ansi Cargo.toml src/config.rs
     - name: bat diagnostics output
       uses: actions-rs/cargo@v1
       with:
         use-cross: ${{ matrix.job.use-cross }}
         command: run
-        args: --target=${{ matrix.job.target }} ${{ matrix.job.cargo-options }} -- --paging=never --color=always --theme=ansi Cargo.toml src/config.rs --diagnostic
+        args: --target=${{ matrix.job.target }} -- --paging=never --color=always --theme=ansi Cargo.toml src/config.rs --diagnostic
     - name: Check features regex-onig
       uses: actions-rs/cargo@v1
       with:
@@ -202,15 +226,13 @@ jobs:
         PKG_NAME=${PKG_BASENAME}${PKG_suffix}
         echo ::set-output name=PKG_NAME::${PKG_NAME}
 
-        ARCHIVE_DIR="${{ steps.vars.outputs.STAGING }}/${PKG_BASENAME}/"
+        PKG_STAGING="${{ env.CICD_INTERMEDIATES_DIR }}/package"
+        ARCHIVE_DIR="${PKG_STAGING}/${PKG_BASENAME}/"
         mkdir -p "${ARCHIVE_DIR}"
         mkdir -p "${ARCHIVE_DIR}/autocomplete"
 
         # Binary
-        cp 'target/${{ matrix.job.target }}/release/${{ env.PROJECT_NAME }}${{ steps.vars.outputs.EXE_suffix }}' "$ARCHIVE_DIR"
-
-        # `strip` binary (if needed)
-        if [ -n "${{ steps.vars.outputs.STRIP }}" ]; then "${{ steps.vars.outputs.STRIP }}" "$ARCHIVE_DIR/${{ env.PROJECT_NAME }}${{ steps.vars.outputs.EXE_suffix }}" ; fi
+        cp "${{ steps.strip.outputs.BIN_PATH }}" "$ARCHIVE_DIR"
 
         # Man page
         cp 'target/${{ matrix.job.target }}/release/build/${{ env.PROJECT_NAME }}'-*/out/assets/manual/bat.1 "$ARCHIVE_DIR"
@@ -223,19 +245,23 @@ jobs:
         cp 'target/${{ matrix.job.target }}/release/build/${{ env.PROJECT_NAME }}'-*/out/assets/completions/bat.zsh "$ARCHIVE_DIR/autocomplete/${{ env.PROJECT_NAME }}.zsh"
 
         # base compressed package
-        pushd '${{ steps.vars.outputs.STAGING }}/' >/dev/null
+        pushd "${PKG_STAGING}/" >/dev/null
         case ${{ matrix.job.target }} in
           *-pc-windows-*) 7z -y a "${PKG_NAME}" "${PKG_BASENAME}"/* | tail -2 ;;
           *) tar czf "${PKG_NAME}" "${PKG_BASENAME}"/* ;;
         esac;
         popd >/dev/null
+
+        # Let subsequent steps know where to find the compressed package
+        echo ::set-output name=PKG_PATH::"${PKG_STAGING}/${PKG_NAME}"
     - name: Debian package
       id: debian-package
       shell: bash
       if: startsWith(matrix.job.os, 'ubuntu')
       run: |
         COPYRIGHT_YEARS="2018 - "$(date "+%Y")
-        DPKG_DIR="${{ steps.vars.outputs.STAGING }}/dpkg"
+        DPKG_STAGING="${{ env.CICD_INTERMEDIATES_DIR }}/debian-package"
+        DPKG_DIR="${DPKG_STAGING}/dpkg"
         mkdir -p "${DPKG_DIR}"
 
         DPKG_BASENAME=${PROJECT_NAME}
@@ -256,8 +282,7 @@ jobs:
         echo ::set-output name=DPKG_NAME::${DPKG_NAME}
 
         # Binary
-        install -Dm755 'target/${{ matrix.job.target }}/release/${{ env.PROJECT_NAME }}${{ steps.vars.outputs.EXE_suffix }}' "${DPKG_DIR}/usr/bin/${{ env.PROJECT_NAME }}${{ steps.vars.outputs.EXE_suffix }}"
-        if [ -n "${{ steps.vars.outputs.STRIP }}" ]; then "${{ steps.vars.outputs.STRIP }}" "${DPKG_DIR}/usr/bin/${{ env.PROJECT_NAME }}${{ steps.vars.outputs.EXE_suffix }}" ; fi
+        install -Dm755 "${{ steps.strip.outputs.BIN_PATH }}" "${DPKG_DIR}/usr/bin/${{ steps.strip.outputs.BIN_NAME }}"
 
         # Man page
         install -Dm644 'target/${{ matrix.job.target }}/release/build/${{ env.PROJECT_NAME }}'-*/out/assets/manual/bat.1 "${DPKG_DIR}/usr/share/man/man1/${{ env.PROJECT_NAME }}.1"
@@ -331,26 +356,36 @@ jobs:
           A cat(1) clone with syntax highlighting and Git integration.
         EOF
 
+        DPKG_PATH="${DPKG_STAGING}/${DPKG_NAME}"
+        echo ::set-output name=DPKG_PATH::${DPKG_PATH}
+
         # build dpkg
-        fakeroot dpkg-deb --build "${DPKG_DIR}" "${{ steps.vars.outputs.STAGING }}/${DPKG_NAME}"
+        fakeroot dpkg-deb --build "${DPKG_DIR}" "${DPKG_PATH}"
+
     - name: Upload package artifact
       uses: actions/upload-artifact@master
       with:
         name: ${{ steps.package.outputs.PKG_NAME }}
-        path: ${{ steps.vars.outputs.STAGING }}/${{ steps.package.outputs.PKG_NAME }}
+        path: ${{ steps.package.outputs.PKG_PATH }}
     - name: Upload Debian package artifact
       uses: actions/upload-artifact@master
       if: steps.debian-package.outputs.DPKG_NAME
       with:
         name: ${{ steps.debian-package.outputs.DPKG_NAME }}
-        path: ${{ steps.vars.outputs.STAGING }}/${{ steps.debian-package.outputs.DPKG_NAME }}
+        path: ${{ steps.debian-package.outputs.DPKG_PATH }}
+    - name: Check for release
+      id: is-release
+      shell: bash
+      run: |
+        unset IS_RELEASE ; if [[ $GITHUB_REF =~ ^refs/tags/v[0-9].* ]]; then IS_RELEASE='true' ; fi
+        echo ::set-output name=IS_RELEASE::${IS_RELEASE}
     - name: Publish archives and packages
       uses: softprops/action-gh-release@v1
-      if: steps.vars.outputs.IS_RELEASE
+      if: steps.is-release.outputs.IS_RELEASE
       with:
         files: |
-          ${{ steps.vars.outputs.STAGING }}/${{ steps.package.outputs.PKG_NAME }}
-          ${{ steps.vars.outputs.STAGING }}/${{ steps.debian-package.outputs.DPKG_NAME }}
+          ${{ steps.package.outputs.PKG_PATH }}
+          ${{ steps.debian-package.outputs.DPKG_PATH }}
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
