@@ -1,5 +1,20 @@
 # unreleased
 
+## Features
+
+## Bugfixes
+
+## Other
+
+## Syntaxes
+
+## New themes
+
+## `bat` as a library
+
+
+
+# v0.18.0
 
 ## Features
 
@@ -16,11 +31,13 @@
 - If `PAGER` (but not `BAT_PAGER` or `--pager`) is `more` or `most`, silently use `less` instead to ensure support for colors, see #1063 (@Enselic)
 - If `PAGER` is `bat`, silently use `less` to prevent recursion. For `BAT_PAGER` or `--pager`, exit with error, see #1413 (@Enselic)
 - Manpage highlighting fix, see #1511 (@keith-hall)
+- `BAT_CONFIG_PATH` ignored by `bat` if non-existent, see #1550 (@sharkdp)
 
 ## Other
 
 - Performance improvements, see #1421 (@LovecraftianHorror)
 - Added a new `--diagnostic` option to collect information for bug reports, see #1459 (@sharkdp)
+- Modified default theme colors to differentiate between a JSON key and a string value, see #1400 (@keith-hall)
 - Upped min required Rust version to 1.42
 
 ## Syntaxes
