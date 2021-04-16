@@ -363,7 +363,7 @@ binaries are also available: look for archives with `musl` in the file name.
 
 ### From source
 
-If you want to build `bat` from source, you need Rust 1.42 or
+If you want to build `bat` from source, you need Rust 1.45 or
 higher. You can then use `cargo` to build everything:
 
 ```bash
@@ -727,7 +727,7 @@ There are a lot of alternatives, if you are looking for similar programs. See
 [this document](doc/alternatives.md) for a comparison.
 
 ## License
-Copyright (c) 2018-2020 [bat-developers](https://github.com/sharkdp/bat).
+Copyright (c) 2018-2021 [bat-developers](https://github.com/sharkdp/bat).
 
 `bat` is made available under the terms of either the MIT License or the Apache License 2.0, at your option.
 
