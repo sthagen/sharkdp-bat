@@ -1,9 +1,39 @@
 # unreleased
 
 ## Features
-- Add SystemVerilog file syntax, see #1580 (@SeanMcLoughlin)
+
+- Ignore known backup/template filename suffixes when selecting the syntax, see #1687 (@scop)
 
 ## Bugfixes
+
+
+## Other
+
+- Fix Clippy lints, see #1661 (@mohamed-abdelnour)
+- Add syntax highlighting test files, see #1213 and #1668 (@mohamed-abdelnour)
+- Add bash completion, see #1678 (@scop)
+
+
+## Syntaxes
+
+- Added support for `dash` syntax, see #1654 (@mohamed-abdelnour)
+- Added support for `XAML` syntax, see #1590 and #1655 (@mohamed-abdelnour)
+- Apply `DotENV` syntax also for `.env.default` and `.env.defaults` files, see #1669
+
+
+## New themes
+
+
+## `bat` as a library
+
+
+
+
+# v0.18.1
+
+## Bugfixes
+
+- Mouse support and screen clearing broken for `less` versions with minor version number (581.2), see #1629 and #1639 (@aswild)
 
 ## Other
 
@@ -13,9 +43,14 @@
 
 ## Syntaxes
 
+- Improved the Syslog syntax highlighting, see #1606 (@keith-hall)
+- Replaced "Advanced CSV" with a custom CSV syntax definition written especially for `bat`; see #1574 (@keith-hall)
+- Added SystemVerilog file syntax, see #1580 (@SeanMcLoughlin)
+- Added Solidity and Vyper syntax, see #1602 (@Ersikan)
+
 ## New themes
 
-## `bat` as a library
+- Dark+ VS Code theme, see #1588 and #1598 (@PatriotRossii)
 
 
 
@@ -509,7 +544,7 @@ You can see the API documentation here: https://docs.rs/bat/
 
 - Added `BAT_CONFIG_PATH` environment variable to set a non-default path for `bat`s configuration file, see #375 (@deg4uss3r)
 
-- Allow for multiple occurences of `--style` to allow for the configuration
+- Allow for multiple occurrences of `--style` to allow for the configuration
   of styles from the config file, see #367 (@sindreij)
 
 - Allow for multiple `--line-range` arguments, see #23

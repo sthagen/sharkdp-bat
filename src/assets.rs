@@ -23,6 +23,17 @@ pub struct HighlightingAssets {
     fallback_theme: Option<&'static str>,
 }
 
+const IGNORED_SUFFIXES: [&str; 10] = [
+    // Editor etc backups
+    "~", ".bak", ".old", ".orig",
+    // Debian and derivatives apt/dpkg backups
+    ".dpkg-dist", ".dpkg-old",
+    // Red Hat and derivatives rpm backups
+    ".rpmnew", ".rpmorig", ".rpmsave",
+    // Build system input/template files
+    ".in",
+];
+
 impl HighlightingAssets {
     pub fn default_theme() -> &'static str {
         "Monokai Extended"
@@ -201,7 +212,7 @@ impl HighlightingAssets {
                     bat_warning!("Theme '{}' is deprecated, using 'ansi' instead.", theme);
                     return self.get_theme("ansi");
                 }
-                if theme != "" {
+                if !theme.is_empty() {
                     bat_warning!("Unknown theme '{}', using default.", theme)
                 }
                 &self.theme_set.themes[self.fallback_theme.unwrap_or_else(|| Self::default_theme())]
@@ -273,12 +284,22 @@ impl HighlightingAssets {
         self.syntax_set
             .find_syntax_by_extension(file_name.to_str().unwrap_or_default())
             .or_else(|| {
+                let file_path = Path::new(file_name);
                 self.syntax_set.find_syntax_by_extension(
-                    Path::new(file_name)
+                    file_path
                         .extension()
                         .and_then(|x| x.to_str())
                         .unwrap_or_default(),
-                )
+                ).or_else(|| {
+                    if let Some(file_str) = file_path.to_str() {
+                        for suffix in IGNORED_SUFFIXES.iter() {
+                            if let Some(stripped_filename) = file_str.strip_suffix(suffix) {
+                                return self.get_extension_syntax(OsStr::new(stripped_filename));
+                            }
+                        }
+                    }
+                    None
+                })
             })
     }
 
