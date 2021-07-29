@@ -80,9 +80,9 @@ fn get_syntax_mapping_to_paths<'a>(
 pub fn get_languages(config: &Config) -> Result<String> {
     let mut result: String = String::new();
 
-    let assets = assets_from_cache_or_binary()?;
+    let assets = assets_from_cache_or_binary(config.use_custom_assets)?;
     let mut languages = assets
-        .syntaxes()
+        .get_syntaxes()?
         .iter()
         .filter(|syntax| !syntax.hidden && !syntax.file_extensions.is_empty())
         .cloned()
@@ -101,7 +101,10 @@ pub fn get_languages(config: &Config) -> Result<String> {
                 true
             } else {
                 let test_file = Path::new("test").with_extension(extension);
-                match assets.syntax_for_file_name(test_file, &config.syntax_mapping) {
+                let syntax = assets
+                    .get_syntax_for_file_name(test_file, &config.syntax_mapping)
+                    .unwrap(); // safe since .get_syntaxes() above worked
+                match syntax {
                     Some(syntax) => syntax.name == lang_name,
                     None => false,
                 }
@@ -175,7 +178,7 @@ fn theme_preview_file<'a>() -> Input<'a> {
 }
 
 pub fn list_themes(cfg: &Config) -> Result<()> {
-    let assets = assets_from_cache_or_binary()?;
+    let assets = assets_from_cache_or_binary(cfg.use_custom_assets)?;
     let mut config = cfg.clone();
     let mut style = HashSet::new();
     style.insert(StyleComponent::Plain);
@@ -216,7 +219,7 @@ pub fn list_themes(cfg: &Config) -> Result<()> {
 }
 
 fn run_controller(inputs: Vec<Input>, config: &Config) -> Result<bool> {
-    let assets = assets_from_cache_or_binary()?;
+    let assets = assets_from_cache_or_binary(config.use_custom_assets)?;
     let controller = Controller::new(&config, &assets);
     controller.run(inputs)
 }
