@@ -1,7 +1,9 @@
 use std::collections::BTreeMap;
 use std::ffi::OsStr;
 use std::fs;
-use std::path::Path;
+use std::path::{Path, PathBuf};
+
+use lazycell::LazyCell;
 
 use syntect::dumps::{dump_to_file, from_binary, from_reader};
 use syntect::highlighting::{Theme, ThemeSet};
@@ -17,8 +19,9 @@ use crate::syntax_mapping::{MappingTarget, SyntaxMapping};
 
 #[derive(Debug)]
 pub struct HighlightingAssets {
-    syntax_set: SyntaxSet,
-    pub(crate) theme_set: ThemeSet,
+    syntax_set_cell: LazyCell<SyntaxSet>,
+    serialized_syntax_set: Option<SerializedSyntaxSet>,
+    theme_set: ThemeSet,
     fallback_theme: Option<&'static str>,
 }
 
@@ -40,9 +43,21 @@ const IGNORED_SUFFIXES: [&str; 10] = [
 ];
 
 impl HighlightingAssets {
-    fn new(syntax_set: SyntaxSet, theme_set: ThemeSet) -> Self {
+    fn new(
+        syntax_set: Option<SyntaxSet>,
+        serialized_syntax_set: Option<SerializedSyntaxSet>,
+        theme_set: ThemeSet,
+    ) -> Self {
+        assert!(syntax_set.is_some() || serialized_syntax_set.is_some());
+
+        let syntax_set_cell = LazyCell::new();
+        if let Some(syntax_set) = syntax_set {
+            syntax_set_cell.fill(syntax_set).expect("can never fail");
+        }
+
         HighlightingAssets {
-            syntax_set,
+            syntax_set_cell,
+            serialized_syntax_set,
             theme_set,
             fallback_theme: None,
         }
@@ -54,7 +69,7 @@ impl HighlightingAssets {
 
     pub fn from_files(source_dir: &Path, include_integrated_assets: bool) -> Result<Self> {
         let mut theme_set = if include_integrated_assets {
-            Self::get_integrated_themeset()
+            get_integrated_themeset()
         } else {
             ThemeSet {
                 themes: BTreeMap::new(),
@@ -83,7 +98,7 @@ impl HighlightingAssets {
             builder.add_plain_text_syntax();
             builder
         } else {
-            Self::get_integrated_syntaxset().into_builder()
+            get_integrated_syntaxset().into_builder()
         };
 
         let syntax_dir = source_dir.join("syntaxes");
@@ -97,36 +112,39 @@ impl HighlightingAssets {
         }
 
         Ok(HighlightingAssets::new(
-            syntax_set_builder.build(),
+            Some(syntax_set_builder.build()),
+            None,
             theme_set,
         ))
     }
 
     pub fn from_cache(cache_path: &Path) -> Result<Self> {
         Ok(HighlightingAssets::new(
-            asset_from_cache(&cache_path.join("syntaxes.bin"), "syntax set")?,
+            None,
+            Some(SerializedSyntaxSet::FromFile(
+                cache_path.join("syntaxes.bin"),
+            )),
             asset_from_cache(&cache_path.join("themes.bin"), "theme set")?,
         ))
     }
 
-    fn get_integrated_syntaxset() -> SyntaxSet {
-        from_binary(include_bytes!("../assets/syntaxes.bin"))
-    }
-
-    fn get_integrated_themeset() -> ThemeSet {
-        from_binary(include_bytes!("../assets/themes.bin"))
-    }
-
     pub fn from_binary() -> Self {
         HighlightingAssets::new(
-            Self::get_integrated_syntaxset(),
-            Self::get_integrated_themeset(),
+            None,
+            Some(SerializedSyntaxSet::FromBinary(
+                get_serialized_integrated_syntaxset(),
+            )),
+            get_integrated_themeset(),
         )
     }
 
     pub fn save_to_cache(&self, target_dir: &Path, current_version: &str) -> Result<()> {
         let _ = fs::create_dir_all(target_dir);
-        asset_to_cache(&self.theme_set, &target_dir.join("themes.bin"), "theme set")?;
+        asset_to_cache(
+            self.get_theme_set(),
+            &target_dir.join("themes.bin"),
+            "theme set",
+        )?;
         asset_to_cache(
             self.get_syntax_set()?,
             &target_dir.join("syntaxes.bin"),
@@ -148,7 +166,17 @@ impl HighlightingAssets {
     }
 
     pub(crate) fn get_syntax_set(&self) -> Result<&SyntaxSet> {
-        Ok(&self.syntax_set)
+        if !self.syntax_set_cell.filled() {
+            self.syntax_set_cell.fill(
+                self.serialized_syntax_set
+                .as_ref()
+                .expect("a dev forgot to setup serialized_syntax_set, please report to https://github.com/sharkdp/bat/issues")
+                .deserialize()?
+             ).unwrap();
+        }
+
+        // It is safe to .unwrap() because we just made sure it was .filled()
+        Ok(self.syntax_set_cell.borrow().unwrap())
     }
 
     /// Use [Self::get_syntaxes] instead
@@ -163,8 +191,12 @@ impl HighlightingAssets {
         Ok(self.get_syntax_set()?.syntaxes())
     }
 
+    fn get_theme_set(&self) -> &ThemeSet {
+        &self.theme_set
+    }
+
     pub fn themes(&self) -> impl Iterator<Item = &str> {
-        self.theme_set.themes.keys().map(|s| s.as_ref())
+        self.get_theme_set().themes.keys().map(|s| s.as_ref())
     }
 
     /// Use [Self::get_syntax_for_file_name] instead
@@ -195,7 +227,7 @@ impl HighlightingAssets {
     }
 
     pub(crate) fn get_theme(&self, theme: &str) -> &Theme {
-        match self.theme_set.themes.get(theme) {
+        match self.get_theme_set().themes.get(theme) {
             Some(theme) => theme,
             None => {
                 if theme == "ansi-light" || theme == "ansi-dark" {
@@ -205,7 +237,8 @@ impl HighlightingAssets {
                 if !theme.is_empty() {
                     bat_warning!("Unknown theme '{}', using default.", theme)
                 }
-                &self.theme_set.themes[self.fallback_theme.unwrap_or_else(|| Self::default_theme())]
+                &self.get_theme_set().themes
+                    [self.fallback_theme.unwrap_or_else(|| Self::default_theme())]
             }
         }
     }
@@ -325,6 +358,38 @@ impl HighlightingAssets {
             .ok()
             .and_then(|l| syntax_set.find_syntax_by_first_line(&l)))
     }
+}
+
+/// A SyntaxSet in serialized form, i.e. bincoded and flate2 compressed.
+/// We keep it in this format since we want to load it lazily.
+#[derive(Debug)]
+enum SerializedSyntaxSet {
+    /// The data comes from a user-generated cache file.
+    FromFile(PathBuf),
+
+    /// The data to use is embedded into the bat binary.
+    FromBinary(&'static [u8]),
+}
+
+impl SerializedSyntaxSet {
+    fn deserialize(&self) -> Result<SyntaxSet> {
+        match self {
+            SerializedSyntaxSet::FromBinary(data) => Ok(from_binary(data)),
+            SerializedSyntaxSet::FromFile(ref path) => asset_from_cache(&path, "syntax set"),
+        }
+    }
+}
+
+fn get_serialized_integrated_syntaxset() -> &'static [u8] {
+    include_bytes!("../assets/syntaxes.bin")
+}
+
+fn get_integrated_syntaxset() -> SyntaxSet {
+    from_binary(get_serialized_integrated_syntaxset())
+}
+
+fn get_integrated_themeset() -> ThemeSet {
+    from_binary(include_bytes!("../assets/themes.bin"))
 }
 
 fn asset_to_cache<T: serde::Serialize>(asset: &T, path: &Path, description: &str) -> Result<()> {
