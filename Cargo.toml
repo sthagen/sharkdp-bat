@@ -47,7 +47,7 @@ unicode-width = "0.1.8"
 globset = "0.4"
 serde = { version = "1.0", features = ["derive"] }
 serde_yaml = "0.8"
-semver = "0.11"
+semver = "1.0"
 path_abs = { version = "0.5", default-features = false }
 clircle = "0.3"
 bugreport = "0.4"
@@ -60,7 +60,7 @@ optional = true
 default-features = false
 
 [dependencies.syntect]
-version = "4.5.0"
+version = "4.6.0"
 default-features = false
 features = ["parsing", "yaml-load", "dump-load", "dump-create"]
 
@@ -77,7 +77,7 @@ default-features = false
 [dev-dependencies]
 assert_cmd = "1.0.5"
 serial_test = "0.5.1"
-predicates = "1.0.7"
+predicates = "2.0.1"
 wait-timeout = "0.2.0"
 tempfile = "3.2.0"
 
