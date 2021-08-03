@@ -46,13 +46,13 @@ dependencies = [
 
 [[package]]
 name = "assert_cmd"
-version = "1.0.5"
+version = "1.0.8"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "a88b6bd5df287567ffdf4ddf4d33060048e1068308e5f62d81c6f9824a045a48"
+checksum = "c98233c6673d8601ab23e77eb38f999c51100d46c5703b17288c57fddf3a1ffe"
 dependencies = [
  "bstr",
  "doc-comment",
- "predicates 1.0.8",
+ "predicates",
  "predicates-core",
  "predicates-tree",
  "wait-timeout",
@@ -104,7 +104,7 @@ dependencies = [
  "lazycell",
  "nix",
  "path_abs",
- "predicates 2.0.1",
+ "predicates",
  "semver",
  "serde",
  "serde_yaml",
@@ -160,9 +160,9 @@ dependencies = [
 
 [[package]]
 name = "bugreport"
-version = "0.4.0"
+version = "0.4.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "a0e97e538864a7c95d33accbf64c8d354018ba3b6e032502fd0fe7259cf1aa3d"
+checksum = "0014b4b2b4f63bfe69c3838470121290cc437fdc79785d408a761a21e8b2404c"
 dependencies = [
  "git-version",
  "shell-escape",
@@ -260,12 +260,6 @@ checksum = "81156fece84ab6a9f2afdb109ce3ae577e42b1228441eded99bd77f627953b1a"
 dependencies = [
  "cfg-if",
 ]
-
-[[package]]
-name = "difference"
-version = "2.0.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "524cbf6897b527295dff137cec09ecf3a05f4fddffd7dfcd1585403449e74198"
 
 [[package]]
 name = "difflib"
@@ -393,9 +387,9 @@ dependencies = [
 
 [[package]]
 name = "fancy-regex"
-version = "0.3.5"
+version = "0.7.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "ae91abf6555234338687bb47913978d275539235fcb77ba9863b779090b42b14"
+checksum = "9d6b8560a05112eb52f04b00e5d3790c0dd75d9d980eb8a122fb23b92a623ccf"
 dependencies = [
  "bit-set",
  "regex",
@@ -603,9 +597,9 @@ checksum = "830d08ce1d1d941e6b30645f1a0eb5643013d835ce3779a5fc208261dbe10f55"
 
 [[package]]
 name = "libc"
-version = "0.2.95"
+version = "0.2.98"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "789da6d93f1b866ffe175afc5322a4d76c038605a1c3319bb57b06967ca98a36"
+checksum = "320cfe77175da3a483efed4bc0adc1968ca050b098ce4f2f1c13a56626128790"
 
 [[package]]
 name = "libgit2-sys"
@@ -697,9 +691,9 @@ dependencies = [
 
 [[package]]
 name = "nix"
-version = "0.21.0"
+version = "0.22.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "5c3728fec49d363a50a8828a190b379a446cc5cf085c06259bbbeb34447e4ec7"
+checksum = "cf1e25ee6b412c2a1e3fcb6a4499a5c1bfe7f43e014bdce9a6b6666e5aa2d187"
 dependencies = [
  "bitflags",
  "cc",
@@ -820,16 +814,6 @@ name = "ppv-lite86"
 version = "0.2.10"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "ac74c624d6b2d21f425f752262f42188365d7b8ff1aff74c82e45136510a4857"
-
-[[package]]
-name = "predicates"
-version = "1.0.8"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "f49cfaf7fdaa3bfacc6fa3e7054e65148878354a5cfddcf661df4c851f8021df"
-dependencies = [
- "difference",
- "predicates-core",
-]
 
 [[package]]
 name = "predicates"
@@ -1120,9 +1104,9 @@ dependencies = [
 
 [[package]]
 name = "syntect"
-version = "4.5.0"
+version = "4.6.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "2bfac2b23b4d049dc9a89353b4e06bbc85a8f42020cccbe5409a115cf19031e5"
+checksum = "8b20815bbe80ee0be06e6957450a841185fcf690fe0178f14d77a05ce2caa031"
 dependencies = [
  "bincode",
  "bitflags",
