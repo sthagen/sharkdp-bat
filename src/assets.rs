@@ -111,8 +111,17 @@ impl HighlightingAssets {
             );
         }
 
+        let syntax_set = syntax_set_builder.build();
+        let missing_contexts = syntax_set.find_unlinked_contexts();
+        if !missing_contexts.is_empty() {
+            println!("Some referenced contexts could not be found!");
+            for context in missing_contexts {
+                println!("- {}", context);
+            }
+        }
+
         Ok(HighlightingAssets::new(
-            Some(syntax_set_builder.build()),
+            Some(syntax_set),
             None,
             theme_set,
         ))
@@ -443,6 +452,18 @@ mod tests {
             }
         }
 
+        fn get_syntax_name(
+            &self,
+            language: Option<&str>,
+            input: &mut OpenedInput,
+            mapping: &SyntaxMapping,
+        ) -> String {
+            self.assets
+                .get_syntax(language, input, mapping)
+                .map(|syntax| syntax.name.clone())
+                .unwrap_or_else(|_| "!no syntax!".to_owned())
+        }
+
         fn syntax_for_real_file_with_content_os(
             &self,
             file_name: &OsStr,
@@ -458,16 +479,7 @@ mod tests {
             let dummy_stdin: &[u8] = &[];
             let mut opened_input = input.open(dummy_stdin, None).unwrap();
 
-            self.assets
-                .get_syntax(None, &mut opened_input, &self.syntax_mapping)
-                .unwrap_or_else(|_| {
-                    self.assets
-                        .get_syntax_set()
-                        .expect("this is mod tests")
-                        .find_syntax_plain_text()
-                })
-                .name
-                .clone()
+            self.get_syntax_name(None, &mut opened_input, &self.syntax_mapping)
         }
 
         fn syntax_for_file_with_content_os(&self, file_name: &OsStr, first_line: &str) -> String {
@@ -477,16 +489,7 @@ mod tests {
             let dummy_stdin: &[u8] = &[];
             let mut opened_input = input.open(dummy_stdin, None).unwrap();
 
-            self.assets
-                .get_syntax(None, &mut opened_input, &self.syntax_mapping)
-                .unwrap_or_else(|_| {
-                    self.assets
-                        .get_syntax_set()
-                        .expect("this is mod tests")
-                        .find_syntax_plain_text()
-                })
-                .name
-                .clone()
+            self.get_syntax_name(None, &mut opened_input, &self.syntax_mapping)
         }
 
         #[cfg(unix)]
@@ -506,16 +509,7 @@ mod tests {
             let input = Input::stdin().with_name(Some(file_name));
             let mut opened_input = input.open(content, None).unwrap();
 
-            self.assets
-                .get_syntax(None, &mut opened_input, &self.syntax_mapping)
-                .unwrap_or_else(|_| {
-                    self.assets
-                        .get_syntax_set()
-                        .expect("this is mod tests")
-                        .find_syntax_plain_text()
-                })
-                .name
-                .clone()
+            self.get_syntax_name(None, &mut opened_input, &self.syntax_mapping)
         }
 
         fn syntax_is_same_for_inputkinds(&self, file_name: &str, content: &str) -> bool {
@@ -669,14 +663,7 @@ mod tests {
         let mut opened_input = input.open(dummy_stdin, None).unwrap();
 
         assert_eq!(
-            test.assets
-                .get_syntax(None, &mut opened_input, &test.syntax_mapping)
-                .unwrap_or_else(|_| test
-                    .assets
-                    .get_syntax_set()
-                    .expect("this is mod tests")
-                    .find_syntax_plain_text())
-                .name,
+            test.get_syntax_name(None, &mut opened_input, &test.syntax_mapping),
             "SSH Config"
         );
     }
