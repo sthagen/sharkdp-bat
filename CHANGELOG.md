@@ -5,6 +5,7 @@
 
 ## Bugfixes
 
+- Python syntax highlighting no longer suffers from abysmal performance in specific scenarios. See #1688 (@keith-hall)
 
 ## Other
 
@@ -16,13 +17,16 @@
 
 - Groff, see #1685 (@scop)
 - HTTP Requests and Responses, see #1748 (@keith-hall)
+- LLVM, see #1777 (@ioncodes)
+- Highlight for `vimrc` and `gvimrc` files, see #1763 (@SuperSandro2000)
+
 
 ## New themes
 
 
 ## `bat` as a library
 
-- Deprecate `HighlightingAssets::syntaxes()` and `HighlightingAssets::syntax_for_file_name()`. Use `HighlightingAssets::get_syntaxes()` and `HighlightingAssets::get_syntax_for_file_name()` instead. They return a `Result` which is needed for upcoming lazy-loading work to improve startup performance. See #1747 and #1755 (@Enselic)
+- Deprecate `HighlightingAssets::syntaxes()` and `HighlightingAssets::syntax_for_file_name()`. Use `HighlightingAssets::get_syntaxes()` and `HighlightingAssets::get_syntax_for_file_name()` instead. They return a `Result` which is needed for upcoming lazy-loading work to improve startup performance. They also return what `SyntaxSet` the returned `SyntaxReference` belongs to. See #1747, #1755 and #1776 (@Enselic)
 
 
 
