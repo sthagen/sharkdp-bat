@@ -40,6 +40,7 @@ fn bat_raw_command_with_config() -> Command {
     cmd.env_remove("BAT_STYLE");
     cmd.env_remove("BAT_THEME");
     cmd.env_remove("BAT_TABS");
+    cmd.env_remove("BAT_CONFIG_DIR");
     cmd
 }
 
@@ -745,6 +746,19 @@ fn config_location_when_generating() {
 
     // Now we expect the file to exist. If it exists, we assume contents are correct
     assert!(tmp_config_path.exists());
+}
+
+#[test]
+fn config_location_from_bat_config_dir_variable() {
+    bat_with_config()
+        .env("BAT_CONFIG_DIR", "conf/")
+        .arg("--config-file")
+        .assert()
+        .success()
+        .stdout(
+            predicate::str::is_match("conf/config\n")
+                .unwrap()
+        );
 }
 
 #[test]
