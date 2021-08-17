@@ -1,17 +1,15 @@
-use std::collections::BTreeMap;
 use std::ffi::OsStr;
 use std::fs;
 use std::path::{Path, PathBuf};
 
 use lazycell::LazyCell;
 
-use syntect::dumps::{dump_to_file, from_binary, from_reader};
+use syntect::dumps::{from_binary, from_reader};
 use syntect::highlighting::{Theme, ThemeSet};
-use syntect::parsing::{SyntaxReference, SyntaxSet, SyntaxSetBuilder};
+use syntect::parsing::{SyntaxReference, SyntaxSet};
 
 use path_abs::PathAbs;
 
-use crate::assets_metadata::AssetsMetadata;
 use crate::bat_warning;
 use crate::error::*;
 use crate::input::{InputReader, OpenedInput, OpenedInputKind};
@@ -73,13 +71,12 @@ impl HighlightingAssets {
         "Monokai Extended"
     }
 
+    #[cfg(feature = "build-assets")]
     pub fn from_files(source_dir: &Path, include_integrated_assets: bool) -> Result<Self> {
         let mut theme_set = if include_integrated_assets {
             get_integrated_themeset()
         } else {
-            ThemeSet {
-                themes: BTreeMap::new(),
-            }
+            ThemeSet::new()
         };
 
         let theme_dir = source_dir.join("themes");
@@ -100,11 +97,11 @@ impl HighlightingAssets {
         }
 
         let mut syntax_set_builder = if !include_integrated_assets {
-            let mut builder = SyntaxSetBuilder::new();
+            let mut builder = syntect::parsing::SyntaxSetBuilder::new();
             builder.add_plain_text_syntax();
             builder
         } else {
-            get_integrated_syntaxset().into_builder()
+            from_binary::<SyntaxSet>(get_serialized_integrated_syntaxset()).into_builder()
         };
 
         let syntax_dir = source_dir.join("syntaxes");
@@ -155,6 +152,7 @@ impl HighlightingAssets {
         )
     }
 
+    #[cfg(feature = "build-assets")]
     pub fn save_to_cache(&self, target_dir: &Path, current_version: &str) -> Result<()> {
         let _ = fs::create_dir_all(target_dir);
         asset_to_cache(
@@ -172,7 +170,7 @@ impl HighlightingAssets {
             "Writing metadata to folder {} ... ",
             target_dir.to_string_lossy()
         );
-        AssetsMetadata::new(current_version).save_to_folder(target_dir)?;
+        crate::assets_metadata::AssetsMetadata::new(current_version).save_to_folder(target_dir)?;
         println!("okay");
 
         Ok(())
@@ -419,17 +417,14 @@ fn get_serialized_integrated_syntaxset() -> &'static [u8] {
     include_bytes!("../assets/syntaxes.bin")
 }
 
-fn get_integrated_syntaxset() -> SyntaxSet {
-    from_binary(get_serialized_integrated_syntaxset())
-}
-
 fn get_integrated_themeset() -> ThemeSet {
     from_binary(include_bytes!("../assets/themes.bin"))
 }
 
+#[cfg(feature = "build-assets")]
 fn asset_to_cache<T: serde::Serialize>(asset: &T, path: &Path, description: &str) -> Result<()> {
     print!("Writing {} to {} ... ", description, path.to_string_lossy());
-    dump_to_file(asset, &path).chain_err(|| {
+    syntect::dumps::dump_to_file(asset, &path).chain_err(|| {
         format!(
             "Could not save {} to {}",
             description,
