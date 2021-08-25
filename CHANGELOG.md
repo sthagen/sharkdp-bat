@@ -3,6 +3,7 @@
 ## Features
 
 - `$BAT_CONFIG_DIR` is now a recognized environment variable. It has precedence over `$XDG_CONFIG_HOME`, see #1727 (@billrisher)
+- Support for `x:+delta` syntax in line ranges (e.g. `20:+10`). See  #1810 (@bojan88)
 
 ## Bugfixes
 
@@ -29,7 +30,15 @@
 ## `bat` as a library
 
 - Deprecate `HighlightingAssets::syntaxes()` and `HighlightingAssets::syntax_for_file_name()`. Use `HighlightingAssets::get_syntaxes()` and `HighlightingAssets::get_syntax_for_file_name()` instead. They return a `Result` which is needed for upcoming lazy-loading work to improve startup performance. They also return what `SyntaxSet` the returned `SyntaxReference` belongs to. See #1747, #1755 and #1776 (@Enselic)
+- Remove `HighlightingAssets::from_files` and `HighlightingAssets::save_to_cache`. Instead of calling the former and then the latter you now make a single call to `bat::assets::build`. See #1802 (@Enselic)
 
+
+
+# v0.18.3
+
+## Bugfixes
+
+- Bump `git2` dependency to fix build with Rust 1.54, see #1761
 
 
 # v0.18.2
