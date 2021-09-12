@@ -226,29 +226,29 @@ impl<'a> InteractivePrinter<'a> {
 
     fn create_fake_panel(&self, text: &str) -> String {
         if self.panel_width == 0 {
-            "".to_string()
+            return "".to_string();
+        }
+
+        let text_truncated: String = text.chars().take(self.panel_width - 1).collect();
+        let text_filled: String = format!(
+            "{}{}",
+            text_truncated,
+            " ".repeat(self.panel_width - 1 - text_truncated.len())
+        );
+        if self.config.style_components.grid() {
+            format!("{} │ ", text_filled)
         } else {
-            let text_truncated: String = text.chars().take(self.panel_width - 1).collect();
-            let text_filled: String = format!(
-                "{}{}",
-                text_truncated,
-                " ".repeat(self.panel_width - 1 - text_truncated.len())
-            );
-            if self.config.style_components.grid() {
-                format!("{} │ ", text_filled)
-            } else {
-                text_filled
-            }
+            text_filled
         }
     }
 
     fn preprocess(&self, text: &str, cursor: &mut usize) -> String {
         if self.config.tab_width > 0 {
-            expand_tabs(text, self.config.tab_width, cursor)
-        } else {
-            *cursor += text.len();
-            text.to_string()
+            return expand_tabs(text, self.config.tab_width, cursor);
         }
+
+        *cursor += text.len();
+        text.to_string()
     }
 }
 
@@ -395,7 +395,7 @@ impl<'a> Printer for InteractivePrinter<'a> {
                     return Ok(());
                 }
             };
-            highlighter.highlight(line.as_ref(), self.syntax_set)
+            highlighter.highlight(&line, self.syntax_set)
         };
 
         if out_of_range {
@@ -420,8 +420,7 @@ impl<'a> Printer for InteractivePrinter<'a> {
             let decorations = self
                 .decorations
                 .iter()
-                .map(|d| d.generate(line_number, false, self))
-                .collect::<Vec<_>>();
+                .map(|d| d.generate(line_number, false, self));
 
             for deco in decorations {
                 write!(handle, "{} ", deco.text)?;
@@ -435,7 +434,7 @@ impl<'a> Printer for InteractivePrinter<'a> {
             let colored_output = self.config.colored_output;
             let italics = self.config.use_italic_text;
 
-            for &(style, region) in regions.iter() {
+            for &(style, region) in &regions {
                 let text = &*self.preprocess(region, &mut cursor_total);
                 let text_trimmed = text.trim_end_matches(|c| c == '\r' || c == '\n');
                 write!(
@@ -472,7 +471,7 @@ impl<'a> Printer for InteractivePrinter<'a> {
                 writeln!(handle)?;
             }
         } else {
-            for &(style, region) in regions.iter() {
+            for &(style, region) in &regions {
                 let ansi_iterator = AnsiCodeIterator::new(region);
                 let mut ansi_prefix: String = String::new();
                 for chunk in ansi_iterator {
