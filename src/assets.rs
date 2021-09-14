@@ -220,12 +220,7 @@ impl HighlightingAssets {
         let file_name = file_name.as_ref();
         Ok(match mapping.get_syntax_for(file_name) {
             Some(MappingTarget::MapToUnknown) => None,
-            Some(MappingTarget::MapTo(syntax_name)) => {
-                let syntax_set = self.get_syntax_set()?;
-                syntax_set
-                    .find_syntax_by_name(syntax_name)
-                    .map(|syntax| SyntaxReferenceInSet { syntax, syntax_set })
-            }
+            Some(MappingTarget::MapTo(syntax_name)) => self.find_syntax_by_name(syntax_name)?,
             None => self.get_extension_syntax(file_name.as_os_str())?,
         })
     }
@@ -287,13 +282,9 @@ impl HighlightingAssets {
                 Some(MappingTarget::MapToUnknown) => line_syntax
                     .ok_or_else(|| Error::UndetectedSyntax(path.to_string_lossy().into())),
 
-                Some(MappingTarget::MapTo(syntax_name)) => {
-                    let syntax_set = self.get_syntax_set()?;
-                    syntax_set
-                        .find_syntax_by_name(syntax_name)
-                        .map(|syntax| SyntaxReferenceInSet { syntax, syntax_set })
-                        .ok_or_else(|| Error::UnknownSyntax(syntax_name.to_owned()))
-                }
+                Some(MappingTarget::MapTo(syntax_name)) => self
+                    .find_syntax_by_name(syntax_name)?
+                    .ok_or_else(|| Error::UnknownSyntax(syntax_name.to_owned())),
 
                 None => {
                     let file_name = path.file_name().unwrap_or_default();
@@ -308,6 +299,20 @@ impl HighlightingAssets {
         }
     }
 
+    fn find_syntax_by_name(&self, syntax_name: &str) -> Result<Option<SyntaxReferenceInSet>> {
+        let syntax_set = self.get_syntax_set()?;
+        Ok(syntax_set
+            .find_syntax_by_name(syntax_name)
+            .map(|syntax| SyntaxReferenceInSet { syntax, syntax_set }))
+    }
+
+    fn find_syntax_by_extension(&self, extension: &str) -> Result<Option<SyntaxReferenceInSet>> {
+        let syntax_set = self.get_syntax_set()?;
+        Ok(syntax_set
+            .find_syntax_by_extension(extension)
+            .map(|syntax| SyntaxReferenceInSet { syntax, syntax_set }))
+    }
+
     fn get_extension_syntax(&self, file_name: &OsStr) -> Result<Option<SyntaxReferenceInSet>> {
         let mut syntax = self.find_syntax_by_file_name(file_name)?;
         if syntax.is_none() {
@@ -320,26 +325,19 @@ impl HighlightingAssets {
     }
 
     fn find_syntax_by_file_name(&self, file_name: &OsStr) -> Result<Option<SyntaxReferenceInSet>> {
-        let syntax_set = self.get_syntax_set()?;
-        Ok(syntax_set
-            .find_syntax_by_extension(file_name.to_str().unwrap_or_default())
-            .map(|syntax| SyntaxReferenceInSet { syntax, syntax_set }))
+        self.find_syntax_by_extension(file_name.to_str().unwrap_or_default())
     }
 
     fn find_syntax_by_file_name_extension(
         &self,
         file_name: &OsStr,
     ) -> Result<Option<SyntaxReferenceInSet>> {
-        let file_path = Path::new(file_name);
-        let syntax_set = self.get_syntax_set()?;
-        Ok(syntax_set
-            .find_syntax_by_extension(
-                file_path
-                    .extension()
-                    .and_then(|x| x.to_str())
-                    .unwrap_or_default(),
-            )
-            .map(|syntax| SyntaxReferenceInSet { syntax, syntax_set }))
+        self.find_syntax_by_extension(
+            Path::new(file_name)
+                .extension()
+                .and_then(|x| x.to_str())
+                .unwrap_or_default(),
+        )
     }
 
     /// If we find an ignored suffix on the file name, e.g. '~', we strip it and
