@@ -45,21 +45,21 @@ pub struct SyntaxReferenceInSet<'a> {
     pub syntax_set: &'a SyntaxSet,
 }
 
-// Compress for size of ~700 kB instead of ~4600 kB at the cost of ~30% longer deserialization time
+/// Compress for size of ~700 kB instead of ~4600 kB at the cost of ~30% longer deserialization time
 pub(crate) const COMPRESS_SYNTAXES: bool = true;
 
-// Compress for size of ~20 kB instead of ~200 kB at the cost of ~30% longer deserialization time
+/// Compress for size of ~20 kB instead of ~200 kB at the cost of ~30% longer deserialization time
 pub(crate) const COMPRESS_THEMES: bool = true;
 
-// Compress for size of ~400 kB instead of ~2100 kB at the cost of ~30% longer deserialization time
+/// Compress for size of ~400 kB instead of ~2100 kB at the cost of ~30% longer deserialization time
 pub(crate) const COMPRESS_SERIALIZED_MINIMAL_SYNTAXES: bool = true;
 
-// Whether or not to compress the serialized form of [MinimalSyntaxes]. Shall
-// always be `false`, because the data in
-// [MinimalSyntaxes.serialized_syntax_sets] has already been compressed
-// (assuming [COMPRESS_SERIALIZED_MINIMAL_SYNTAXES] is `true`). The "outer" data
-// structures like `by_name` are tiny. If we compress, deserialization can't do
-// efficient byte-by-byte copy of `serialized_syntax_sets`.
+/// Whether or not to compress the serialized form of [MinimalSyntaxes]. Shall
+/// always be `false`, because the data in
+/// [MinimalSyntaxes.serialized_syntax_sets] has already been compressed
+/// (assuming [COMPRESS_SERIALIZED_MINIMAL_SYNTAXES] is `true`). The "outer" data
+/// structures like `by_name` are tiny. If we compress, deserialization can't do
+/// efficient byte-by-byte copy of `serialized_syntax_sets`.
 pub(crate) const COMPRESS_MINIMAL_SYNTAXES: bool = false;
 
 impl HighlightingAssets {
@@ -201,7 +201,7 @@ impl HighlightingAssets {
         // Get the path of the file:
         // If this was set by the metadata, that will take priority.
         // If it wasn't, it will use the real file path (if available).
-        let path_str = input
+        let path = input
             .metadata
             .user_provided_name
             .as_ref()
@@ -210,15 +210,11 @@ impl HighlightingAssets {
                 _ => None,
             });
 
-        let path_syntax = if let Some(path_str) = path_str {
+        let path_syntax = if let Some(path) = path {
             // If a path was provided, we try and detect the syntax based on extension mappings.
-            let path = Path::new(path_str);
-            let absolute_path = PathAbs::new(path)
-                .ok()
-                .map(|p| p.as_path().to_path_buf())
-                .unwrap_or_else(|| path.to_owned());
-
-            match mapping.get_syntax_for(absolute_path) {
+            match mapping.get_syntax_for(
+                PathAbs::new(path).map_or_else(|_| path.to_owned(), |p| p.as_path().to_path_buf()),
+            ) {
                 Some(MappingTarget::MapToUnknown) => {
                     Err(Error::UndetectedSyntax(path.to_string_lossy().into()))
                 }
