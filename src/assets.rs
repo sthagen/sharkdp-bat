@@ -250,17 +250,18 @@ impl HighlightingAssets {
             .map(|syntax| SyntaxReferenceInSet { syntax, syntax_set }))
     }
 
-    fn find_syntax_by_extension(&self, extension: &str) -> Result<Option<SyntaxReferenceInSet>> {
+    fn find_syntax_by_extension(&self, e: Option<&OsStr>) -> Result<Option<SyntaxReferenceInSet>> {
         let syntax_set = self.get_syntax_set()?;
+        let extension = e.and_then(|x| x.to_str()).unwrap_or_default();
         Ok(syntax_set
             .find_syntax_by_extension(extension)
             .map(|syntax| SyntaxReferenceInSet { syntax, syntax_set }))
     }
 
     fn get_extension_syntax(&self, file_name: &OsStr) -> Result<Option<SyntaxReferenceInSet>> {
-        let mut syntax = self.find_syntax_by_file_name(file_name)?;
+        let mut syntax = self.find_syntax_by_extension(Some(file_name))?;
         if syntax.is_none() {
-            syntax = self.find_syntax_by_file_name_extension(file_name)?;
+            syntax = self.find_syntax_by_extension(Path::new(file_name).extension())?;
         }
         if syntax.is_none() {
             syntax = try_with_stripped_suffix(file_name, |stripped_file_name| {
@@ -268,22 +269,6 @@ impl HighlightingAssets {
             })?;
         }
         Ok(syntax)
-    }
-
-    fn find_syntax_by_file_name(&self, file_name: &OsStr) -> Result<Option<SyntaxReferenceInSet>> {
-        self.find_syntax_by_extension(file_name.to_str().unwrap_or_default())
-    }
-
-    fn find_syntax_by_file_name_extension(
-        &self,
-        file_name: &OsStr,
-    ) -> Result<Option<SyntaxReferenceInSet>> {
-        self.find_syntax_by_extension(
-            Path::new(file_name)
-                .extension()
-                .and_then(|x| x.to_str())
-                .unwrap_or_default(),
-        )
     }
 
     fn get_first_line_syntax(
