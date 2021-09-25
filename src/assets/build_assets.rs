@@ -8,6 +8,8 @@ use syntect::parsing::{Scope, SyntaxSet, SyntaxSetBuilder};
 
 use crate::assets::*;
 
+mod graphviz_utils;
+
 type SyntaxName = String;
 
 /// Used to look up which [SyntaxDefinition] corresponds to a given [OtherSyntax]
@@ -20,8 +22,8 @@ type SyntaxToDependencies = HashMap<SyntaxName, Vec<OtherSyntax>>;
 type SyntaxToDependents<'a> = HashMap<SyntaxName, Vec<OtherSyntax>>;
 
 /// Represents some other `*.sublime-syntax` file, i.e. another [SyntaxDefinition].
-#[derive(Debug, Eq, PartialEq, Clone, Hash)]
-enum OtherSyntax {
+#[derive(Debug, Eq, PartialEq, PartialOrd, Ord, Clone, Hash)]
+pub(crate) enum OtherSyntax {
     /// By name. Example YAML: `include: C.sublime-syntax` (name is `"C"`)
     ByName(String),
 
@@ -221,6 +223,11 @@ fn build_minimal_syntax_sets(
     let (other_syntax_lookup, syntax_to_dependencies, syntax_to_dependents) =
         generate_maps(syntaxes);
 
+    maybe_write_syntax_dependencies_to_graphviz_dot_file(
+        &other_syntax_lookup,
+        &syntax_to_dependencies,
+    );
+
     // Create one minimal SyntaxSet from each (non-hidden) SyntaxDefinition
     syntaxes.iter().filter_map(move |syntax| {
         if syntax.hidden {
@@ -304,6 +311,7 @@ fn dependencies_for_syntax(syntax: &SyntaxDefinition) -> Vec<OtherSyntax> {
         .collect();
 
     // No need to track a dependency more than once
+    dependencies.sort();
     dependencies.dedup();
 
     dependencies
@@ -328,10 +336,51 @@ fn dependencies_from_pattern(pattern: &Pattern) -> Vec<OtherSyntax> {
     .collect()
 }
 
+/// To generate a Graphviz dot file of syntax dependencies, do this:
+/// ```bash
+/// sudo apt install graphviz
+/// BAT_SYNTAX_DEPENDENCIES_TO_GRAPHVIZ_DOT_FILE=/tmp/bat-syntax-dependencies.dot cargo run -- cache  --build --source assets --blank --target /tmp
+/// dot /tmp/bat-syntax-dependencies.dot -Tpng -o /tmp/bat-syntax-dependencies.png
+/// open /tmp/bat-syntax-dependencies.png
+/// ```
+fn maybe_write_syntax_dependencies_to_graphviz_dot_file(
+    other_syntax_lookup: &OtherSyntaxLookup,
+    syntax_to_dependencies: &SyntaxToDependencies,
+) {
+    if let Ok(dot_file_path) = std::env::var("BAT_SYNTAX_DEPENDENCIES_TO_GRAPHVIZ_DOT_FILE") {
+        graphviz_utils::try_syntax_dependencies_to_graphviz_dot_file(
+            other_syntax_lookup,
+            syntax_to_dependencies,
+            &dot_file_path,
+        );
+    }
+}
+
+/// Removes any context name from the syntax reference.
+///
+/// When we track dependencies between syntaxes, we are not interested in
+/// dependencies on specific contexts inside other syntaxes. We only care about
+/// the dependency on the syntax itself.
+///
+/// For example, if a syntax includes another syntax like this:
+/// ```yaml
+///   - include: scope:source.c++#unique-variables
+/// ```
+/// we only want to track the dependency on `source.c++`.
+fn remove_explicit_context(scope: Scope) -> Scope {
+    if let Some(without_context) = scope.build_string().split('#').next() {
+        Scope::new(without_context).expect("removing context reference must never fail")
+    } else {
+        scope
+    }
+}
+
 fn dependency_from_context_reference(context_reference: &ContextReference) -> Option<OtherSyntax> {
     match &context_reference {
         ContextReference::File { ref name, .. } => Some(OtherSyntax::ByName(name.clone())),
-        ContextReference::ByScope { ref scope, .. } => Some(OtherSyntax::ByScope(*scope)),
+        ContextReference::ByScope { ref scope, .. } => {
+            Some(OtherSyntax::ByScope(remove_explicit_context(*scope)))
+        }
         _ => None,
     }
 }
@@ -435,4 +484,17 @@ fn asset_to_cache<T: serde::Serialize>(
     })?;
     println!("okay");
     Ok(())
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn remove_explicit_context_sanity() {
+        // Example from Objective-C++.sublime-syntax
+        let scope = Scope::new("source.c++#unique-variables").unwrap();
+        let expected = Scope::new("source.c++").unwrap();
+        assert_eq!(remove_explicit_context(scope), expected);
+    }
 }
