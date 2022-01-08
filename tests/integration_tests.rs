@@ -1,4 +1,5 @@
 use assert_cmd::cargo::CommandCargoExt;
+use predicates::boolean::PredicateBooleanExt;
 use predicates::{prelude::predicate, str::PredicateStrExt};
 use serial_test::serial;
 use std::path::Path;
@@ -1222,6 +1223,92 @@ fn grid_for_file_without_newline() {
    1   │ Single Line
 ───────┴────────────────────────────────────────────────────────────────────────
 ",
+        )
+        .stderr("");
+}
+
+// Ensure that ANSI passthrough is emitted properly for both wrapping and non-wrapping printer.
+#[test]
+fn ansi_passthrough_emit() {
+    for wrapping in &["never", "character"] {
+        bat()
+            .arg("--paging=never")
+            .arg("--color=never")
+            .arg("--terminal-width=80")
+            .arg(format!("--wrap={}", wrapping))
+            .arg("--decorations=always")
+            .arg("--style=plain")
+            .write_stdin("\x1B[33mColor\nColor \x1B[m\nPlain\n")
+            .assert()
+            .success()
+            .stdout("\x1B[33m\x1B[33mColor\n\x1B[33mColor \x1B[m\nPlain\n")
+            .stderr("");
+    }
+}
+
+#[test]
+fn ignored_suffix_arg() {
+    bat()
+        .arg("-f")
+        .arg("-p")
+        .arg("test.json~")
+        .assert()
+        .success()
+        .stdout("\u{1b}[38;5;231m{\u{1b}[0m\u{1b}[38;5;208m\"\u{1b}[0m\u{1b}[38;5;208mtest\u{1b}[0m\u{1b}[38;5;208m\"\u{1b}[0m\u{1b}[38;5;231m:\u{1b}[0m\u{1b}[38;5;231m \u{1b}[0m\u{1b}[38;5;186m\"\u{1b}[0m\u{1b}[38;5;186mvalue\u{1b}[0m\u{1b}[38;5;186m\"\u{1b}[0m\u{1b}[38;5;231m}\u{1b}[0m")
+        .stderr("");
+
+    bat()
+        .arg("-f")
+        .arg("-p")
+        .arg("--ignored-suffix=.suffix")
+        .arg("test.json.suffix")
+        .assert()
+        .success()
+        .stdout("\u{1b}[38;5;231m{\u{1b}[0m\u{1b}[38;5;208m\"\u{1b}[0m\u{1b}[38;5;208mtest\u{1b}[0m\u{1b}[38;5;208m\"\u{1b}[0m\u{1b}[38;5;231m:\u{1b}[0m\u{1b}[38;5;231m \u{1b}[0m\u{1b}[38;5;186m\"\u{1b}[0m\u{1b}[38;5;186mvalue\u{1b}[0m\u{1b}[38;5;186m\"\u{1b}[0m\u{1b}[38;5;231m}\u{1b}[0m")
+        .stderr("");
+
+    bat()
+        .arg("-f")
+        .arg("-p")
+        .arg("test.json.suffix")
+        .assert()
+        .success()
+        .stdout("\u{1b}[38;5;231m{\"test\": \"value\"}\u{1b}[0m")
+        .stderr("");
+}
+
+#[test]
+fn acknowledgements() {
+    bat()
+        .arg("--acknowledgements")
+        .assert()
+        .success()
+        .stdout(
+            // Just some sanity checking that avoids names of persons, except our own Keith Hall :)
+            predicate::str::contains(
+                "Copyright (c) 2018-2021 bat-developers (https://github.com/sharkdp/bat).",
+            )
+            .and(predicate::str::contains(
+                "Copyright (c) 2012-2020 The Sublime CMake authors",
+            ))
+            .and(predicate::str::contains(
+                "Copyright 2014-2015 SaltStack Team",
+            ))
+            .and(predicate::str::contains(
+                "Copyright (c) 2013-present Dracula Theme",
+            ))
+            .and(predicate::str::contains(
+                "## syntaxes/01_Packages/Rust/LICENSE.txt",
+            ))
+            .and(predicate::str::contains(
+                "## syntaxes/02_Extra/http-request-response/LICENSE",
+            ))
+            .and(predicate::str::contains(
+                "## themes/dracula-sublime/LICENSE",
+            ))
+            .and(predicate::str::contains("Copyright (c) 2017 b123400"))
+            .and(predicate::str::contains("Copyright (c) 2021 Keith Hall"))
+            .and(predicate::str::contains("Copyright 2014 Clams")),
         )
         .stderr("");
 }

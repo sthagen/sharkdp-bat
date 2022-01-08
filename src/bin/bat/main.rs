@@ -47,9 +47,13 @@ fn build_assets(matches: &clap::ArgMatches) -> Result<()> {
         .map(Path::new)
         .unwrap_or_else(|| PROJECT_DIRS.cache_dir());
 
-    let blank = matches.is_present("blank");
-
-    bat::assets::build(source_dir, !blank, target_dir, clap::crate_version!())
+    bat::assets::build(
+        source_dir,
+        !matches.is_present("blank"),
+        matches.is_present("acknowledgements"),
+        target_dir,
+        clap::crate_version!(),
+    )
 }
 
 fn run_cache_subcommand(matches: &clap::ArgMatches) -> Result<()> {
@@ -70,12 +74,9 @@ fn get_syntax_mapping_to_paths<'a>(
 ) -> HashMap<&'a str, Vec<String>> {
     let mut map = HashMap::new();
     for mapping in mappings {
-        match mapping {
-            (_, MappingTarget::MapToUnknown) => {}
-            (matcher, MappingTarget::MapTo(s)) => {
-                let globs = map.entry(*s).or_insert_with(Vec::new);
-                globs.push(matcher.glob().glob().into());
-            }
+        if let (matcher, MappingTarget::MapTo(s)) = mapping {
+            let globs = map.entry(*s).or_insert_with(Vec::new);
+            globs.push(matcher.glob().glob().into());
         }
     }
     map
@@ -229,7 +230,7 @@ fn invoke_bugreport(app: &App) {
     let pager = bat::config::get_pager_executable(app.matches.value_of("pager"))
         .unwrap_or_else(|| "less".to_owned()); // FIXME: Avoid non-canonical path to "less".
 
-    let report = bugreport!()
+    let mut report = bugreport!()
         .info(SoftwareVersion::default())
         .info(OperatingSystem::default())
         .info(CommandLine::default())
@@ -255,14 +256,13 @@ fn invoke_bugreport(app: &App) {
         .info(FileContent::new("Config file", config_file()))
         .info(CompileTimeInformation::default());
 
-    let mut report = if let Ok(resolved_path) = grep_cli::resolve_binary(pager) {
-        report.info(CommandOutput::new(
+    #[cfg(feature = "paging")]
+    if let Ok(resolved_path) = grep_cli::resolve_binary(pager) {
+        report = report.info(CommandOutput::new(
             "Less version",
             resolved_path,
             &["--version"],
         ))
-    } else {
-        report
     };
 
     report.print::<Markdown>();
@@ -323,6 +323,9 @@ fn run() -> Result<bool> {
                 Ok(true)
             } else if app.matches.is_present("cache-dir") {
                 writeln!(io::stdout(), "{}", cache_dir())?;
+                Ok(true)
+            } else if app.matches.is_present("acknowledgements") {
+                writeln!(io::stdout(), "{}", bat::assets::get_acknowledgements())?;
                 Ok(true)
             } else {
                 run_controller(inputs, &config)
