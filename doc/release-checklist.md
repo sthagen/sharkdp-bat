@@ -1,16 +1,5 @@
 # Release checklist
 
-## Dependencies
-
-See this page for a good overview: https://deps.rs/repo/github/sharkdp/bat
-
-- [ ] Optional: update dependencies with `cargo update`. This is also done by
-      dependabot, so it is not strictly necessary.
-- [ ] Install [cargo-outdated](https://crates.io/crates/cargo-outdated). Check
-      for outdated dependencies with `cargo outdated --root-deps-only` and
-      decide for each of them whether we want to (manually) upgrade. This will
-      require changes to `Cargo.toml`.
-
 ## Version bump
 
 - [ ] Update version in `Cargo.toml`. Run `cargo build` to update `Cargo.lock`.
@@ -24,7 +13,7 @@ See this page for a good overview: https://deps.rs/repo/github/sharkdp/bat
 
 ## Update syntaxes and themes (build assets)
 
-- [ ] Install the latest master version (`cargo install -f --path .`) and make
+- [ ] Install the latest master version (`cargo clean && cargo install -f --path .`) and make
       sure that it is available on the `PATH` (`bat --version` should show the
       new version).
 - [ ] Run `assets/create.sh` and check in the binary asset files.
@@ -32,7 +21,7 @@ See this page for a good overview: https://deps.rs/repo/github/sharkdp/bat
 ## Documentation
 
 - [ ] Review the `-h` and `--help` texts
-- [ ] Review the `man` page
+- [ ] Review the `man` page (`man $(fd -HIp target/release/build.*out/assets/manual/bat.1) | tee`)
 
 ## Pre-release checks
 

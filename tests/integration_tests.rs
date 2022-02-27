@@ -919,7 +919,7 @@ fn empty_file_leads_to_empty_output_with_rule_enabled() {
 }
 
 #[test]
-fn filename_basic() {
+fn header_basic() {
     bat()
         .arg("test.txt")
         .arg("--decorations=always")
@@ -933,7 +933,21 @@ fn filename_basic() {
 }
 
 #[test]
-fn filename_binary() {
+fn header_full_basic() {
+    bat()
+        .arg("test.txt")
+        .arg("--decorations=always")
+        .arg("--style=header-filename,header-filesize")
+        .arg("-r=0:0")
+        .arg("--file-name=foo")
+        .assert()
+        .success()
+        .stdout("File: foo\nSize: 12 B\n")
+        .stderr("");
+}
+
+#[test]
+fn header_binary() {
     bat()
         .arg("test.binary")
         .arg("--decorations=always")
@@ -943,6 +957,20 @@ fn filename_binary() {
         .assert()
         .success()
         .stdout("File: foo   <BINARY>\n")
+        .stderr("");
+}
+
+#[test]
+fn header_full_binary() {
+    bat()
+        .arg("test.binary")
+        .arg("--decorations=always")
+        .arg("--style=header-filename,header-filesize")
+        .arg("-r=0:0")
+        .arg("--file-name=foo")
+        .assert()
+        .success()
+        .stdout("File: foo   <BINARY>\nSize: 4 B\n")
         .stderr("");
 }
 
@@ -1017,6 +1045,18 @@ fn header_padding() {
 }
 
 #[test]
+fn header_full_padding() {
+    bat()
+        .arg("--decorations=always")
+        .arg("--style=header-filename,header-filesize")
+        .arg("test.txt")
+        .arg("single-line.txt")
+        .assert()
+        .stdout("File: test.txt\nSize: 12 B\nhello world\n\nFile: single-line.txt\nSize: 11 B\nSingle Line\n")
+        .stderr("");
+}
+
+#[test]
 fn header_padding_rule() {
     bat()
         .arg("--decorations=always")
@@ -1030,6 +1070,28 @@ fn header_padding_rule() {
 hello world
 ────────────────────────────────────────────────────────────────────────────────
 File: single-line.txt
+Single Line
+",
+        )
+        .stderr("");
+}
+
+#[test]
+fn header_full_padding_rule() {
+    bat()
+        .arg("--decorations=always")
+        .arg("--style=header-filename,header-filesize,rule")
+        .arg("--terminal-width=80")
+        .arg("test.txt")
+        .arg("single-line.txt")
+        .assert()
+        .stdout(
+            "File: test.txt
+Size: 12 B
+hello world
+────────────────────────────────────────────────────────────────────────────────
+File: single-line.txt
+Size: 11 B
 Single Line
 ",
         )
@@ -1055,7 +1117,9 @@ Single Line
 ────────────────────────────────────────────────────────────────────────────────
 ",
         )
-        .stderr("\x1b[33m[bat warning]\x1b[0m: Style 'rule' is a subset of style 'grid', 'rule' will not be visible.\n");
+        .stderr(
+            "\x1b[33m[bat warning]\x1b[0m: Style 'rule' is a subset of style 'grid', 'rule' will not be visible.\n",
+        );
 }
 
 #[cfg(target_os = "linux")]
@@ -1219,11 +1283,31 @@ fn grid_for_file_without_newline() {
             "\
 ───────┬────────────────────────────────────────────────────────────────────────
        │ File: single-line.txt
+       │ Size: 11 B
 ───────┼────────────────────────────────────────────────────────────────────────
    1   │ Single Line
 ───────┴────────────────────────────────────────────────────────────────────────
 ",
         )
+        .stderr("");
+}
+
+// For ANSI theme, use underscore as a highlighter
+#[test]
+fn ansi_highlight_underline() {
+    bat()
+        .arg("--paging=never")
+        .arg("--color=never")
+        .arg("--terminal-width=80")
+        .arg("--wrap=never")
+        .arg("--decorations=always")
+        .arg("--theme=ansi")
+        .arg("--style=plain")
+        .arg("--highlight-line=1")
+        .write_stdin("Ansi Underscore Test\nAnother Line")
+        .assert()
+        .success()
+        .stdout("\x1B[4mAnsi Underscore Test\n\x1B[24mAnother Line")
         .stderr("");
 }
 
@@ -1274,6 +1358,45 @@ fn ignored_suffix_arg() {
         .assert()
         .success()
         .stdout("\u{1b}[38;5;231m{\"test\": \"value\"}\u{1b}[0m")
+        .stderr("");
+}
+
+#[test]
+fn all_global_git_config_locations_syntax_mapping_work() {
+    let fake_home = Path::new(EXAMPLES_DIR).join("git").canonicalize().unwrap();
+    let expected = "\u{1b}[38;5;231m[\u{1b}[0m\u{1b}[38;5;149muser\u{1b}[0m\u{1b}[38;5;231m]\u{1b}[0m
+\u{1b}[38;5;231m    \u{1b}[0m\u{1b}[38;5;231memail\u{1b}[0m\u{1b}[38;5;231m \u{1b}[0m\u{1b}[38;5;203m=\u{1b}[0m\u{1b}[38;5;231m \u{1b}[0m\u{1b}[38;5;186mfoo@bar.net\u{1b}[0m
+\u{1b}[38;5;231m    \u{1b}[0m\u{1b}[38;5;231mname\u{1b}[0m\u{1b}[38;5;231m \u{1b}[0m\u{1b}[38;5;203m=\u{1b}[0m\u{1b}[38;5;231m \u{1b}[0m\u{1b}[38;5;186mfoobar\u{1b}[0m
+";
+
+    bat()
+        .env("XDG_CONFIG_HOME", fake_home.join(".config").as_os_str())
+        .arg("-f")
+        .arg("-p")
+        .arg("git/.config/git/config")
+        .assert()
+        .success()
+        .stdout(expected)
+        .stderr("");
+
+    bat()
+        .env("HOME", fake_home.as_os_str())
+        .arg("-f")
+        .arg("-p")
+        .arg("git/.config/git/config")
+        .assert()
+        .success()
+        .stdout(expected)
+        .stderr("");
+
+    bat()
+        .env("HOME", fake_home.as_os_str())
+        .arg("-f")
+        .arg("-p")
+        .arg("git/.gitconfig")
+        .assert()
+        .success()
+        .stdout(expected)
         .stderr("");
 }
 

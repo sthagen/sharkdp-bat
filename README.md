@@ -19,6 +19,19 @@
   [<a href="doc/README-ru.md">Русский</a>]
 </p>
 
+### Sponsors
+
+A special *thank you* goes to our biggest <a href="doc/sponsors.md">sponsors</a>:<br>
+<a href="https://workos.com/?utm_campaign=github_repo&utm_medium=referral&utm_content=bat&utm_source=github">
+  <img src="doc/sponsors/workos-logo-white-bg.svg" width="200" alt="WorkOS">
+  <br>
+  <strong>Your app, enterprise-ready.</strong>
+  <br>
+  <sub>Start selling to enterprise customers with just a few lines of code.</sub>
+  <br>
+  <sup>Add Single Sign-On (and more) in minutes instead of months.</sup>
+</a>
+
 ### Syntax highlighting
 
 `bat` supports syntax highlighting for a large number of programming and markup
@@ -515,8 +528,9 @@ command line option. The option takes an argument of the form `pattern:syntax` w
 the absolute file path. The `syntax` part is the full name of a supported language
 (use `bat --list-languages` for an overview).
 
-Note: You probably want to use this option as an entry in `bat`s configuration file instead
-of passing it on the command line (see below).
+**Note:** You probably want to use this option as [an entry in `bat`'s configuration file](#configuration-file)
+for persistence instead of passing it on the command line as a one-off. Generally
+you'd just use `-l` if you want to manually specify a language for a file.
 
 Example: To use "INI" syntax highlighting for all files with a `.conf` file extension, use
 ```bash
