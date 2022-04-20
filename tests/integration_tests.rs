@@ -1218,6 +1218,52 @@ fn show_all_mode() {
 }
 
 #[test]
+fn show_all_extends_tab_markers_to_next_tabstop() {
+    bat()
+        .arg("tabs.txt")
+        .arg("--show-all")
+        .arg("--tabs=4")
+        .arg("--style=plain")
+        .assert()
+        .success()
+        .stdout(
+            "├──┤1├─┤2├─┤3├─┤4␊
+1├─┤?␊
+22├┤?␊
+333↹?␊
+4444├──┤?␊
+55555├─┤?␊
+666666├┤?␊
+7777777↹?␊
+88888888├──┤?␊
+",
+        );
+}
+
+#[test]
+fn show_all_extends_tab_markers_to_next_tabstop_width_8() {
+    bat()
+        .arg("tabs.txt")
+        .arg("--show-all")
+        .arg("--tabs=8")
+        .arg("--style=plain")
+        .assert()
+        .success()
+        .stdout(
+            "├──────┤1├─────┤2├─────┤3├─────┤4␊
+1├─────┤?␊
+22├────┤?␊
+333├───┤?␊
+4444├──┤?␊
+55555├─┤?␊
+666666├┤?␊
+7777777↹?␊
+88888888├──────┤?␊
+",
+        );
+}
+
+#[test]
 fn no_paging_arg() {
     bat()
         .arg("--no-paging")

@@ -1,3 +1,28 @@
+# unreleased
+
+## Features
+
+- Correctly render tab stops in --show-all, see #2038 (@Synthetica9)
+
+## Bugfixes
+
+- Bump `regex` dependency from 1.5.4 to 1.5.5 to fix [CVE-2022-24713](https://blog.rust-lang.org/2022/03/08/cve-2022-24713.html), see #2145, #2139 (@Enselic)
+
+## Other
+
+- Include info about custom assets in `--diagnostics` if used. See #2107, #2144 (@Enselic)
+
+## Syntaxes
+
+- Mapped clang-format config file (.clang-format) to YAML syntax (@TruncatedDinosour)
+- log syntax: improved handling of escape characters in double quoted strings. See #2123 (@keith-hall)
+
+## Themes
+
+## `bat` as a library
+
+- Allow configuration of `show_nonprintable` with `PrettyPrinter`, see #2142
+
 # v0.20.0
 
 ## Features
