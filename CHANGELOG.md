@@ -2,6 +2,21 @@
 
 ## Features
 
+## Bugfixes
+
+## Other
+
+## Syntaxes
+
+## Themes
+
+## `bat` as a library
+
+
+# v0.21.0
+
+## Features
+
 - Correctly render tab stops in `--show-all`, see #2038 (@Synthetica9)
 - Add a `--style=default` option and make it the default. It is less verbose than `full`, see #2061 (@IsaacHorvath)
 - Enable BusyBox `less` as pager, see #2162 (@nfisher1226)
@@ -28,6 +43,7 @@
 - Associate `/var/spool/mail/*` and `/var/mail/*` with the `Email` syntax. See #2156 (@cyqsimon)
 - Added cmd-help syntax to scope --help messages. See #2148 (@victor-gp)
 - Slightly adjust Zig syntax. See #2136 (@Enselic)
+- Associate `.inf` files with the `INI` syntax. See #2190 (@Enselic)
 
 ## Themes
 
