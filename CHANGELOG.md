@@ -7,6 +7,8 @@
 ## Bugfixes
 
 - Prevent fork nightmare with `PAGER=batcat`. See #2235 (@johnmatthiggins)
+- Make `--no-paging`/`-P` override `--paging=...` if passed as a later arg, see #2201 (@themkat)
+- `--map-syntax` and `--ignored-suffix` now works together, see #2093 (@czzrr)
 
 ## Other
 
@@ -17,6 +19,7 @@
 - NSE (Nmap Scripting Engine) is mapped to Lua, see #2151 (@Cre3per)
 - Correctly color `fstab` dump and pass fields, see #2246 (@yuvalmo)
 - Update `Command Help` syntax, see #2255
+- `Julia`: Fix syntax highlighting for function name starting with `struct`, see #2230
 
 ## Themes
 

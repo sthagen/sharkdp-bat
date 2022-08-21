@@ -696,6 +696,18 @@ fn alias_pager_disable_long_overrides_short() {
 }
 
 #[test]
+fn disable_pager_if_disable_paging_flag_comes_after_paging() {
+    bat()
+        .env("PAGER", "echo pager-output")
+        .arg("--paging=always")
+        .arg("-P")
+        .arg("test.txt")
+        .assert()
+        .success()
+        .stdout(predicate::eq("hello world\n").normalize());
+}
+
+#[test]
 fn pager_failed_to_parse() {
     bat()
         .env("BAT_PAGER", "mismatched-quotes 'a")
@@ -1521,6 +1533,36 @@ fn all_global_git_config_locations_syntax_mapping_work() {
         .assert()
         .success()
         .stdout(expected)
+        .stderr("");
+}
+
+#[test]
+fn map_syntax_and_ignored_suffix_work_together() {
+    bat()
+        .arg("-f")
+        .arg("--theme")
+        .arg("Monokai Extended")
+        .arg("-p")
+        .arg("--ignored-suffix=.suffix")
+        .arg("--map-syntax=*.demo:JSON")
+        .arg("test.demo.suffix")
+        .assert()
+        .success()
+        .stdout("\u{1b}[38;5;231m{\u{1b}[0m\u{1b}[38;5;208m\"\u{1b}[0m\u{1b}[38;5;208mtest\u{1b}[0m\u{1b}[38;5;208m\"\u{1b}[0m\u{1b}[38;5;231m:\u{1b}[0m\u{1b}[38;5;231m \u{1b}[0m\u{1b}[38;5;186m\"\u{1b}[0m\u{1b}[38;5;186mvalue\u{1b}[0m\u{1b}[38;5;186m\"\u{1b}[0m\u{1b}[38;5;231m}\u{1b}[0m")
+        .stderr("");
+
+    bat()
+        .arg("-f")
+        .arg("--theme")
+        .arg("Monokai Extended")
+        .arg("-p")
+        .arg("--ignored-suffix=.suffix")
+        .arg("--ignored-suffix=.foo")
+        .arg("--map-syntax=*.demo:JSON")
+        .arg("test.demo.foo.suffix")
+        .assert()
+        .success()
+        .stdout("\u{1b}[38;5;231m{\u{1b}[0m\u{1b}[38;5;208m\"\u{1b}[0m\u{1b}[38;5;208mtest\u{1b}[0m\u{1b}[38;5;208m\"\u{1b}[0m\u{1b}[38;5;231m:\u{1b}[0m\u{1b}[38;5;231m \u{1b}[0m\u{1b}[38;5;186m\"\u{1b}[0m\u{1b}[38;5;186mvalue\u{1b}[0m\u{1b}[38;5;186m\"\u{1b}[0m\u{1b}[38;5;231m}\u{1b}[0m")
         .stderr("");
 }
 
