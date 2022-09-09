@@ -7,7 +7,7 @@ use globset::{Candidate, GlobBuilder, GlobMatcher};
 
 pub mod ignored_suffixes;
 
-#[derive(Debug, Clone, Copy, PartialEq)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
 #[non_exhaustive]
 pub enum MappingTarget<'a> {
     /// For mapping a path to a specific syntax.
@@ -65,6 +65,9 @@ impl<'a> SyntaxMapping<'a> {
             .unwrap();
         mapping
             .insert("*.pac", MappingTarget::MapTo("JavaScript (Babel)"))
+            .unwrap();
+        mapping
+            .insert("fish_history", MappingTarget::MapTo("YAML"))
             .unwrap();
 
         // See #2151, https://nmap.org/book/nse-language.html

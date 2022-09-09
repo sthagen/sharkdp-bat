@@ -1,9 +1,7 @@
-use assert_cmd::cargo::CommandCargoExt;
 use predicates::boolean::PredicateBooleanExt;
 use predicates::{prelude::predicate, str::PredicateStrExt};
 use serial_test::serial;
 use std::path::Path;
-use std::process::Command;
 use std::str::from_utf8;
 use tempfile::tempdir;
 
@@ -28,40 +26,13 @@ mod unix {
 use unix::*;
 
 mod utils;
+use utils::command::{bat, bat_with_config};
+
+#[cfg(unix)]
+use utils::command::bat_raw_command;
 use utils::mocked_pagers;
 
 const EXAMPLES_DIR: &str = "tests/examples";
-
-fn bat_raw_command_with_config() -> Command {
-    let mut cmd = Command::cargo_bin("bat").unwrap();
-    cmd.current_dir("tests/examples");
-    cmd.env_remove("BAT_CACHE_PATH");
-    cmd.env_remove("BAT_CONFIG_DIR");
-    cmd.env_remove("BAT_CONFIG_PATH");
-    cmd.env_remove("BAT_OPTS");
-    cmd.env_remove("BAT_PAGER");
-    cmd.env_remove("BAT_STYLE");
-    cmd.env_remove("BAT_TABS");
-    cmd.env_remove("BAT_THEME");
-    cmd.env_remove("COLORTERM");
-    cmd.env_remove("NO_COLOR");
-    cmd.env_remove("PAGER");
-    cmd
-}
-
-fn bat_raw_command() -> Command {
-    let mut cmd = bat_raw_command_with_config();
-    cmd.arg("--no-config");
-    cmd
-}
-
-fn bat_with_config() -> assert_cmd::Command {
-    assert_cmd::Command::from_std(bat_raw_command_with_config())
-}
-
-fn bat() -> assert_cmd::Command {
-    assert_cmd::Command::from_std(bat_raw_command())
-}
 
 #[test]
 fn basic() {
@@ -787,14 +758,66 @@ fn config_read_arguments_from_file() {
 
 #[test]
 fn utf16() {
-    // The output will be converted to UTF-8 with a leading UTF-8 BOM
+    // The output will be converted to UTF-8 with the leading UTF-16
+    // BOM removed. This behavior is wanted in interactive mode as
+    // some terminals seem to display the BOM character as a space,
+    // and it also breaks syntax highlighting.
     bat()
         .arg("--plain")
         .arg("--decorations=always")
         .arg("test_UTF-16LE.txt")
         .assert()
         .success()
-        .stdout(std::str::from_utf8(b"\xEF\xBB\xBFhello world\n").unwrap());
+        .stdout("hello world\n");
+}
+
+// Regression test for https://github.com/sharkdp/bat/issues/1922
+#[test]
+fn bom_not_stripped_in_loop_through_mode() {
+    bat()
+        .arg("--plain")
+        .arg("--decorations=never")
+        .arg("--color=never")
+        .arg("test_BOM.txt")
+        .assert()
+        .success()
+        .stdout("\u{feff}hello world\n");
+}
+
+// Regression test for https://github.com/sharkdp/bat/issues/1922
+#[test]
+fn bom_stripped_when_colored_output() {
+    bat()
+        .arg("--color=always")
+        .arg("--decorations=never")
+        .arg("test_BOM.txt")
+        .assert()
+        .success()
+        .stdout(
+            predicate::str::is_match("\u{1b}\\[38;5;[0-9]{3}mhello world\u{1b}\\[0m\n").unwrap(),
+        );
+}
+
+// Regression test for https://github.com/sharkdp/bat/issues/1922
+#[test]
+fn bom_stripped_when_no_color_and_not_loop_through() {
+    bat()
+        .arg("--color=never")
+        .arg("--decorations=always")
+        .arg("--style=numbers,grid,header")
+        .arg("--terminal-width=80")
+        .arg("test_BOM.txt")
+        .assert()
+        .success()
+        .stdout(
+            "\
+─────┬──────────────────────────────────────────────────────────────────────────
+     │ File: test_BOM.txt
+─────┼──────────────────────────────────────────────────────────────────────────
+   1 │ hello world
+─────┴──────────────────────────────────────────────────────────────────────────
+",
+        );
 }
 
 #[test]
@@ -987,6 +1010,7 @@ fn header_full_binary() {
 }
 
 #[test]
+#[cfg(feature = "git")] // Expected output assumes git is enabled
 fn header_default() {
     bat()
         .arg("--paging=never")
@@ -1011,6 +1035,7 @@ fn header_default() {
 }
 
 #[test]
+#[cfg(feature = "git")] // Expected output assumes git is enabled
 fn header_default_is_default() {
     bat()
         .arg("--paging=never")
@@ -1373,6 +1398,7 @@ fn plain_mode_does_not_add_nonexisting_newline() {
 
 // Regression test for https://github.com/sharkdp/bat/issues/299
 #[test]
+#[cfg(feature = "git")] // Expected output assumes git is enabled
 fn grid_for_file_without_newline() {
     bat()
         .arg("--paging=never")
@@ -1414,25 +1440,6 @@ fn ansi_highlight_underline() {
         .success()
         .stdout("\x1B[4mAnsi Underscore Test\n\x1B[24mAnother Line")
         .stderr("");
-}
-
-// Ensure that ANSI passthrough is emitted properly for both wrapping and non-wrapping printer.
-#[test]
-fn ansi_passthrough_emit() {
-    for wrapping in &["never", "character"] {
-        bat()
-            .arg("--paging=never")
-            .arg("--color=never")
-            .arg("--terminal-width=80")
-            .arg(format!("--wrap={}", wrapping))
-            .arg("--decorations=always")
-            .arg("--style=plain")
-            .write_stdin("\x1B[33mColor\nColor \x1B[m\nPlain\n")
-            .assert()
-            .success()
-            .stdout("\x1B[33m\x1B[33mColor\n\x1B[33mColor \x1B[m\nPlain\n")
-            .stderr("");
-    }
 }
 
 #[test]

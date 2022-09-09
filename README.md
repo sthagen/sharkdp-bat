@@ -418,7 +418,7 @@ binaries are also available: look for archives with `musl` in the file name.
 
 ### From source
 
-If you want to build `bat` from source, you need Rust 1.58.0 or
+If you want to build `bat` from source, you need Rust 1.60.0 or
 higher. You can then use `cargo` to build everything:
 
 ```bash
@@ -638,6 +638,10 @@ A default configuration file can be created with the `--generate-config-file` op
 ```bash
 bat --generate-config-file
 ```
+
+There is also now a systemwide configuration file, which is located under `/etc/bat/config` on
+Linux and Mac OS and `C:\ProgramData\bat\config` on windows. If the system wide configuration
+file is present, the content of the user configuration will simply be appended to it.
 
 ### Format
 

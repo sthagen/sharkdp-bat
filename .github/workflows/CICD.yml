@@ -1,7 +1,7 @@
 name: CICD
 
 env:
-  MIN_SUPPORTED_RUST_VERSION: "1.58.0"
+  MIN_SUPPORTED_RUST_VERSION: "1.60.0"
   CICD_INTERMEDIATES_DIR: "_cicd-intermediates"
 
 on:
@@ -39,6 +39,8 @@ jobs:
   min_version:
     name: Minimum supported rust version
     runs-on: ubuntu-20.04
+    env:
+      MSRV_FEATURES: --no-default-features --features minimal-application,bugreport,build-assets
     steps:
     - name: Checkout source code
       uses: actions/checkout@v2
@@ -54,12 +56,12 @@ jobs:
       uses: actions-rs/cargo@v1
       with:
         command: clippy
-        args: --locked --all-targets --all-features
+        args: --locked --all-targets ${{ env.MSRV_FEATURES }}
     - name: Run tests
       uses: actions-rs/cargo@v1
       with:
         command: test
-        args: --locked
+        args: --locked ${{ env.MSRV_FEATURES }}
 
   test_with_new_syntaxes_and_themes:
     name: Run tests with updated syntaxes and themes
@@ -96,7 +98,7 @@ jobs:
       uses: actions-rs/cargo@v1
       with:
         command: test
-        args: --locked --release -- --ignored
+        args: --locked --release --test assets -- --ignored
     - name: Syntax highlighting regression test
       run: tests/syntax-tests/regression_test.sh
     - name: List of languages
@@ -105,6 +107,32 @@ jobs:
       run: bat --list-themes
     - name: Test custom assets
       run: tests/syntax-tests/test_custom_assets.sh
+
+  test_with_system_config:
+    name: Run tests with system wide configuration
+    runs-on: ubuntu-20.04
+    steps:
+    - name: Git checkout
+      uses: actions/checkout@v2
+    - name: Prepare environment variables
+      run: |
+        echo "BAT_SYSTEM_CONFIG_PREFIX=$GITHUB_WORKSPACE/tests/examples/system_config" >> $GITHUB_ENV
+    - name: Install Rust toolchain
+      uses: actions-rs/toolchain@v1
+      with:
+        toolchain: stable
+        default: true
+        profile: minimal
+    - name: Build and install bat
+      uses: actions-rs/cargo@v1
+      with:
+        command: install
+        args: --locked --path .
+    - name: Run unit tests
+      uses: actions-rs/cargo@v1
+      with:
+        command: test
+        args: --locked --test system_wide_config -- --ignored
 
   documentation:
     name: Documentation
