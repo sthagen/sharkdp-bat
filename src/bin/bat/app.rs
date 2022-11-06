@@ -1,13 +1,12 @@
 use std::collections::HashSet;
 use std::env;
 use std::path::{Path, PathBuf};
-use std::str::FromStr;
 
 use atty::{self, Stream};
 
 use crate::{
     clap_app,
-    config::{get_args_from_config_file, get_args_from_env_var},
+    config::{get_args_from_config_file, get_args_from_env_opts_var, get_args_from_env_vars},
 };
 use clap::ArgMatches;
 
@@ -50,19 +49,33 @@ impl App {
     }
 
     fn matches(interactive_output: bool) -> Result<ArgMatches> {
-        let args = if wild::args_os().nth(1) == Some("cache".into())
-            || wild::args_os().any(|arg| arg == "--no-config")
-        {
-            // Skip the arguments in bats config file
+        let args = if wild::args_os().nth(1) == Some("cache".into()) {
+            // Skip the config file and env vars
 
             wild::args_os().collect::<Vec<_>>()
+        } else if wild::args_os().any(|arg| arg == "--no-config") {
+            // Skip the arguments in bats config file
+
+            let mut cli_args = wild::args_os();
+            let mut args = get_args_from_env_vars();
+
+            // Put the zero-th CLI argument (program name) first
+            args.insert(0, cli_args.next().unwrap());
+
+            // .. and the rest at the end
+            cli_args.for_each(|a| args.push(a));
+
+            args
         } else {
             let mut cli_args = wild::args_os();
 
             // Read arguments from bats config file
-            let mut args = get_args_from_env_var()
+            let mut args = get_args_from_env_opts_var()
                 .unwrap_or_else(get_args_from_config_file)
                 .map_err(|_| "Could not parse configuration file")?;
+
+            // Selected env vars supersede config vars
+            args.extend(get_args_from_env_vars());
 
             // Put the zero-th CLI argument (program name) first
             args.insert(0, cli_args.next().unwrap());
@@ -161,17 +174,21 @@ impl App {
                 }),
             show_nonprintable: self.matches.get_flag("show-all"),
             wrapping_mode: if self.interactive_output || maybe_term_width.is_some() {
-                match self.matches.get_one::<String>("wrap").map(|s| s.as_str()) {
-                    Some("character") => WrappingMode::Character,
-                    Some("never") => WrappingMode::NoWrapping(true),
-                    Some("auto") | None => {
-                        if style_components.plain() {
-                            WrappingMode::NoWrapping(false)
-                        } else {
-                            WrappingMode::Character
+                if !self.matches.get_flag("chop-long-lines") {
+                    match self.matches.get_one::<String>("wrap").map(|s| s.as_str()) {
+                        Some("character") => WrappingMode::Character,
+                        Some("never") => WrappingMode::NoWrapping(true),
+                        Some("auto") | None => {
+                            if style_components.plain() {
+                                WrappingMode::NoWrapping(false)
+                            } else {
+                                WrappingMode::Character
+                            }
                         }
+                        _ => unreachable!("other values for --wrap are not allowed"),
                     }
-                    _ => unreachable!("other values for --wrap are not allowed"),
+                } else {
+                    WrappingMode::NoWrapping(true)
                 }
             } else {
                 // We don't have the tty width when piping to another program.
@@ -199,7 +216,6 @@ impl App {
                 .matches
                 .get_one::<String>("tabs")
                 .map(String::from)
-                .or_else(|| env::var("BAT_TABS").ok())
                 .and_then(|t| t.parse().ok())
                 .unwrap_or(
                     if style_components.plain() && paging_mode == PagingMode::Never {
@@ -212,7 +228,6 @@ impl App {
                 .matches
                 .get_one::<String>("theme")
                 .map(String::from)
-                .or_else(|| env::var("BAT_THEME").ok())
                 .map(|s| {
                     if s == "default" {
                         String::from(HighlightingAssets::default_theme())
@@ -221,7 +236,9 @@ impl App {
                     }
                 })
                 .unwrap_or_else(|| String::from(HighlightingAssets::default_theme())),
-            visible_lines: match self.matches.contains_id("diff") && self.matches.get_flag("diff") {
+            visible_lines: match self.matches.try_contains_id("diff").unwrap_or_default()
+                && self.matches.get_flag("diff")
+            {
                 #[cfg(feature = "git")]
                 true => VisibleLines::DiffContext(
                     self.matches
@@ -315,16 +332,6 @@ impl App {
             } else if 0 < matches.get_count("plain") {
                 [StyleComponent::Plain].iter().cloned().collect()
             } else {
-                let env_style_components: Option<Vec<StyleComponent>> = env::var("BAT_STYLE")
-                    .ok()
-                    .map(|style_str| {
-                        style_str
-                            .split(',')
-                            .map(StyleComponent::from_str)
-                            .collect::<Result<Vec<StyleComponent>>>()
-                    })
-                    .transpose()?;
-
                 matches
                     .get_one::<String>("style")
                     .map(|styles| {
@@ -334,7 +341,6 @@ impl App {
                             .filter_map(|style| style.ok())
                             .collect::<Vec<_>>()
                     })
-                    .or(env_style_components)
                     .unwrap_or_else(|| vec![StyleComponent::Default])
                     .into_iter()
                     .map(|style| style.components(self.interactive_output))

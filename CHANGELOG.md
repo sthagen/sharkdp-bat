@@ -2,11 +2,22 @@
 
 ## Features
 
+- Implemented `-S` and `--chop-long-lines` flags as aliases for `--wrap=never`. See #2309 (@johnmatthiggins)
+- Breaking change: Environment variables can now override config file settings (but command-line arguments still have the highest precedence), see #1152, #1281, and #2381 (@aaronkollasch)
+
 ## Bugfixes
 
 ## Other
 
+- Various bash completion improvements, see #2310 (@scop)
+
 ## Syntaxes
+
+- Added support for Ada, see #1300 and #2316 (@dkm)
+- Added `todo.txt` syntax, see #2375 (@BANOnotIT)
+- Improve Manpage.sublime-syntax. See #2364 (@Freed-Wu)
+- Added a new `requirements.txt` syntax, see #2361 (@Freed-Wu)
+- Added a new VimHelp syntax, see #2366 (@Freed-Wu)
 
 ## Themes
 
@@ -18,8 +29,6 @@
 ## Bugfixes
 
 - Bring back pre-processing of ANSI escape characters to so that some common `bat` use cases starts working again. See #2308 (@Enselic)
-- Improve Manpage.sublime-syntax. See #2364 (@Freed-Wu)
-
 
 # v0.22.0
 
