@@ -2,6 +2,24 @@
 
 ## Features
 
+## Bugfixes
+
+## Other
+
+- Output directory for generated assets (completion, manual) can be customized, see #2515 (@tranzystorek-io)
+
+## Syntaxes
+
+## Themes
+
+## `bat` as a library
+
+
+
+# v0.23.0
+
+## Features
+
 - Implemented `-S` and `--chop-long-lines` flags as aliases for `--wrap=never`. See #2309 (@johnmatthiggins)
 - Breaking change: Environment variables can now override config file settings (but command-line arguments still have the highest precedence), see #1152, #1281, and #2381 (@aaronkollasch)
 - Implemented `--nonprintable-notation=caret` to support showing non-printable characters using caret notation. See #2429 (@einfachIrgendwer0815)
@@ -27,10 +45,13 @@
 - Associate `pdm.lock` with `TOML` syntax, see #2410
 - `Todo.txt`: Fix highlighting of contexts and projects at beginning of done.txt, see #2411
 - `cmd-help`: overhaul scope names (colors) to improve theme support; misc syntax improvements. See #2419 (@victor-gp)
+- Added support for Crontab, see #2509 (@keith-hall)
 
 ## Themes
 
 ## `bat` as a library
+
+- `PrettyPrinter::header` correctly displays a header with the filename, see #2378 and #2406 (@cstyles)
 
 
 # v0.22.1
