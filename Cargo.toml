@@ -3,7 +3,7 @@ authors = ["David Peter <mail@david-peter.de>"]
 categories = ["command-line-utilities"]
 description = "A cat(1) clone with wings."
 homepage = "https://github.com/sharkdp/bat"
-license = "MIT/Apache-2.0"
+license = "MIT OR Apache-2.0"
 name = "bat"
 repository = "https://github.com/sharkdp/bat"
 version = "0.23.0"
@@ -84,13 +84,13 @@ features = ["wrap_help", "cargo"]
 
 [target.'cfg(target_os = "macos")'.dependencies]
 dirs = "5.0.0"
-plist = "1.3"
+plist = "1.4.3"
 
 [dev-dependencies]
-assert_cmd = "2.0.8"
+assert_cmd = "2.0.10"
 expect-test = "1.4.0"
-serial_test = "0.6.0"
-predicates = "2.1.5"
+serial_test = { version = "2.0.0", default-features = false }
+predicates = "3.0.2"
 wait-timeout = "0.2.0"
 tempfile = "3.5.0"
 
