@@ -228,6 +228,17 @@ help() {
 
 Then you can do `$ help cp` or `$ help git commit`.
 
+When you are using `zsh`, you can also use global aliases to override `-h` and `--help` entirely:
+
+```bash
+alias -g -- -h='-h 2>&1 | bat --language=help --style=plain'
+alias -g -- --help='--help 2>&1 | bat --language=help --style=plain'
+```
+
+This way, you can keep on using `cp --help`, but get colorized help pages.
+
+Be aware that in some cases, `-h` may not be a shorthand of `--help` (for example with `ls`).
+
 Please report any issues with the help syntax in [this repository](https://github.com/victor-gp/cmd-help-sublime-syntax).
 
 
@@ -390,6 +401,14 @@ take a look at the ["Using `bat` on Windows"](#using-bat-on-windows) section.
 
 You will need to install the [Visual C++ Redistributable](https://support.microsoft.com/en-us/help/2977003/the-latest-supported-visual-c-downloads) package.
 
+#### With WinGet
+
+You can install `bat` via [WinGet](https://learn.microsoft.com/en-us/windows/package-manager/winget):
+
+```bash
+winget install --id=sharkdp.bat -e
+```
+
 #### With Chocolatey
 
 You can install `bat` via [Chocolatey](https://chocolatey.org/packages/Bat):
@@ -402,6 +421,13 @@ choco install bat
 You can install `bat` via [scoop](https://scoop.sh/):
 ```bash
 scoop install bat
+```
+
+#### With Winget
+
+You can install `bat` via [Winget](https://learn.microsoft.com/en-us/windows/package-manager/):
+```bash
+winget install sharkdp.bat
 ```
 
 #### From prebuilt binaries:
@@ -418,7 +444,7 @@ binaries are also available: look for archives with `musl` in the file name.
 
 ### From source
 
-If you want to build `bat` from source, you need Rust 1.64.0 or
+If you want to build `bat` from source, you need Rust 1.70.0 or
 higher. You can then use `cargo` to build everything:
 
 ```bash

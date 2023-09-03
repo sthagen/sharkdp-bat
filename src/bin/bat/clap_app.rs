@@ -311,7 +311,7 @@ pub fn build_app(interactive_output: bool) -> Command {
                 .long_help(
                     "Specify when to use the pager. To disable the pager, use \
                     --paging=never' or its alias,'-P'. To disable the pager permanently, \
-                    set BAT_PAGER to an empty string. To control which pager is used, see the \
+                    set BAT_PAGING to 'never'. To control which pager is used, see the \
                     '--pager' option. Possible values: *auto*, never, always."
                 ),
         )
@@ -497,7 +497,20 @@ pub fn build_app(interactive_output: bool) -> Command {
                 .action(ArgAction::SetTrue)
                 .hide(true)
                 .help("Do not load custom assets"),
+        );
+
+    #[cfg(feature = "lessopen")]
+    {
+        app = app.arg(
+            Arg::new("no-lessopen")
+                .long("no-lessopen")
+                .action(ArgAction::SetTrue)
+                .hide(true)
+                .help("Do not use the $LESSOPEN preprocessor"),
         )
+    }
+
+    app = app
         .arg(
             Arg::new("config-file")
                 .long("config-file")
@@ -536,7 +549,7 @@ pub fn build_app(interactive_output: bool) -> Command {
                 .alias("diagnostics")
                 .action(ArgAction::SetTrue)
                 .hide_short_help(true)
-                .help("Show diagnostic information for bug reports.")
+                .help("Show diagnostic information for bug reports."),
         )
         .arg(
             Arg::new("acknowledgements")

@@ -1,8 +1,7 @@
 use std::collections::HashSet;
 use std::env;
+use std::io::IsTerminal;
 use std::path::{Path, PathBuf};
-
-use is_terminal::IsTerminal;
 
 use crate::{
     clap_app,
@@ -282,6 +281,8 @@ impl App {
                 .map(HighlightedLineRanges)
                 .unwrap_or_default(),
             use_custom_assets: !self.matches.get_flag("no-custom-assets"),
+            #[cfg(feature = "lessopen")]
+            use_lessopen: !self.matches.get_flag("no-lessopen"),
         })
     }
 

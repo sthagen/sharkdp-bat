@@ -844,6 +844,17 @@ fn pager_failed_to_parse() {
 }
 
 #[test]
+fn env_var_bat_paging() {
+    bat()
+        .env("BAT_PAGER", "echo pager-output")
+        .env("BAT_PAGING", "always")
+        .arg("test.txt")
+        .assert()
+        .success()
+        .stdout(predicate::eq("pager-output\n"));
+}
+
+#[test]
 fn diagnostic_sanity_check() {
     bat()
         .arg("--diagnostic")
@@ -2013,4 +2024,201 @@ fn acknowledgements() {
             .and(predicate::str::contains("Copyright 2014 Clams")),
         )
         .stderr("");
+}
+
+#[cfg(unix)] // Expected output assumed that tests are run on a Unix-like system
+#[cfg(feature = "lessopen")]
+#[test]
+fn lessopen_file_piped() {
+    bat()
+        .env("LESSOPEN", "|echo File is %s")
+        .arg("test.txt")
+        .assert()
+        .success()
+        .stdout("File is test.txt\n");
+}
+
+#[cfg(unix)] // Expected output assumed that tests are run on a Unix-like system
+#[cfg(feature = "lessopen")]
+#[test]
+fn lessopen_stdin_piped() {
+    bat()
+        .env("LESSOPEN", "|cat")
+        .write_stdin("hello world\n")
+        .assert()
+        .success()
+        .stdout("hello world\n");
+}
+
+#[cfg(unix)] // Expected output assumed that tests are run on a Unix-like system
+#[cfg(feature = "lessopen")]
+#[test]
+#[serial] // Randomly fails otherwise
+fn lessopen_and_lessclose_file_temp() {
+    // This is mainly to test that $LESSCLOSE gets passed the correct file paths
+    // In this case, the original file and the temporary file returned by $LESSOPEN
+    bat()
+        .env("LESSOPEN", "echo empty.txt")
+        .env("LESSCLOSE", "echo lessclose: %s %s")
+        .arg("test.txt")
+        .assert()
+        .success()
+        .stdout("lessclose: test.txt empty.txt\n");
+}
+
+#[cfg(unix)] // Expected output assumed that tests are run on a Unix-like system
+#[cfg(feature = "lessopen")]
+#[test]
+#[serial] // Randomly fails otherwise
+fn lessopen_and_lessclose_file_piped() {
+    // This is mainly to test that $LESSCLOSE gets passed the correct file paths
+    // In these cases, the original file and a dash
+    bat()
+        // This test will not work properly if $LESSOPEN does not output anything
+        .env("LESSOPEN", "|cat test.txt ")
+        .env("LESSCLOSE", "echo lessclose: %s %s")
+        .arg("empty.txt")
+        .assert()
+        .success()
+        .stdout("hello world\nlessclose: empty.txt -\n");
+
+    bat()
+        .env("LESSOPEN", "||cat empty.txt")
+        .env("LESSCLOSE", "echo lessclose: %s %s")
+        .arg("empty.txt")
+        .assert()
+        .success()
+        .stdout("lessclose: empty.txt -\n");
+}
+
+#[cfg(unix)] // Expected output assumed that tests are run on a Unix-like system
+#[cfg(feature = "lessopen")]
+#[test]
+#[serial] // Randomly fails otherwise
+fn lessopen_and_lessclose_stdin_temp() {
+    // This is mainly to test that $LESSCLOSE gets passed the correct file paths
+    // In this case, a dash and the temporary file returned by $LESSOPEN
+    bat()
+        .env("LESSOPEN", "-echo empty.txt")
+        .env("LESSCLOSE", "echo lessclose: %s %s")
+        .write_stdin("test.txt")
+        .assert()
+        .success()
+        .stdout("lessclose: - empty.txt\n");
+}
+
+#[cfg(unix)] // Expected output assumed that tests are run on a Unix-like system
+#[cfg(feature = "lessopen")]
+#[test]
+#[serial] // Randomly fails otherwise
+fn lessopen_and_lessclose_stdin_piped() {
+    // This is mainly to test that $LESSCLOSE gets passed the correct file paths
+    // In these cases, two dashes
+    bat()
+        // This test will not work properly if $LESSOPEN does not output anything
+        .env("LESSOPEN", "|-cat test.txt")
+        .env("LESSCLOSE", "echo lessclose: %s %s")
+        .write_stdin("empty.txt")
+        .assert()
+        .success()
+        .stdout("hello world\nlessclose: - -\n");
+
+    bat()
+        .env("LESSOPEN", "||-cat empty.txt")
+        .env("LESSCLOSE", "echo lessclose: %s %s")
+        .write_stdin("empty.txt")
+        .assert()
+        .success()
+        .stdout("lessclose: - -\n");
+}
+
+#[cfg(unix)] // Expected output assumed that tests are run on a Unix-like system
+#[cfg(feature = "lessopen")]
+#[test]
+fn lessopen_handling_empty_output_file() {
+    bat()
+        .env("LESSOPEN", "|cat empty.txt")
+        .arg("test.txt")
+        .assert()
+        .success()
+        .stdout("hello world\n");
+
+    bat()
+        .env("LESSOPEN", "|cat nonexistent.txt")
+        .arg("test.txt")
+        .assert()
+        .success()
+        .stdout("hello world\n");
+
+    bat()
+        .env("LESSOPEN", "||cat empty.txt")
+        .arg("test.txt")
+        .assert()
+        .success()
+        .stdout("");
+
+    bat()
+        .env("LESSOPEN", "||cat nonexistent.txt")
+        .arg("test.txt")
+        .assert()
+        .success()
+        .stdout("hello world\n");
+}
+
+#[cfg(unix)] // Expected output assumed that tests are run on a Unix-like system
+#[cfg(feature = "lessopen")]
+#[test]
+fn lessopen_handling_empty_output_stdin() {
+    bat()
+        .env("LESSOPEN", "|-cat empty.txt")
+        .write_stdin("hello world\n")
+        .assert()
+        .success()
+        .stdout("hello world\n");
+
+    bat()
+        .env("LESSOPEN", "|-cat nonexistent.txt")
+        .write_stdin("hello world\n")
+        .assert()
+        .success()
+        .stdout("hello world\n");
+
+    bat()
+        .env("LESSOPEN", "||-cat empty.txt")
+        .write_stdin("hello world\n")
+        .assert()
+        .success()
+        .stdout("");
+
+    bat()
+        .env("LESSOPEN", "||-cat nonexistent.txt")
+        .write_stdin("hello world\n")
+        .assert()
+        .success()
+        .stdout("hello world\n");
+}
+
+#[cfg(unix)] // Expected output assumed that tests are run on a Unix-like system
+#[cfg(feature = "lessopen")]
+#[test]
+fn lessopen_uses_shell() {
+    bat()
+        .env("LESSOPEN", "|cat < %s")
+        .arg("test.txt")
+        .assert()
+        .success()
+        .stdout("hello world\n");
+}
+
+#[cfg(unix)]
+#[cfg(feature = "lessopen")]
+#[test]
+fn do_not_use_lessopen() {
+    bat()
+        .env("LESSOPEN", "|echo File is %s")
+        .arg("--no-lessopen")
+        .arg("test.txt")
+        .assert()
+        .success()
+        .stdout("hello world\n");
 }
