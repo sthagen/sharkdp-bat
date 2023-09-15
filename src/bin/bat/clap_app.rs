@@ -79,6 +79,7 @@ pub fn build_app(interactive_output: bool) -> Command {
             Arg::new("plain")
                 .overrides_with("plain")
                 .overrides_with("number")
+                .overrides_with("paging")
                 .short('p')
                 .long("plain")
                 .action(ArgAction::Count)
@@ -303,6 +304,7 @@ pub fn build_app(interactive_output: bool) -> Command {
                 .long("paging")
                 .overrides_with("paging")
                 .overrides_with("no-paging")
+                .overrides_with("plain")
                 .value_name("when")
                 .value_parser(["auto", "never", "always"])
                 .default_value("auto")
@@ -501,13 +503,21 @@ pub fn build_app(interactive_output: bool) -> Command {
 
     #[cfg(feature = "lessopen")]
     {
-        app = app.arg(
-            Arg::new("no-lessopen")
-                .long("no-lessopen")
-                .action(ArgAction::SetTrue)
-                .hide(true)
-                .help("Do not use the $LESSOPEN preprocessor"),
-        )
+        app = app
+            .arg(
+                Arg::new("lessopen")
+                    .long("lessopen")
+                    .action(ArgAction::SetTrue)
+                    .help("Enable the $LESSOPEN preprocessor"),
+            )
+            .arg(
+                Arg::new("no-lessopen")
+                    .long("no-lessopen")
+                    .action(ArgAction::SetTrue)
+                    .overrides_with("lessopen")
+                    .hide(true)
+                    .help("Disable the $LESSOPEN preprocessor if enabled (overrides --lessopen)"),
+            )
     }
 
     app = app

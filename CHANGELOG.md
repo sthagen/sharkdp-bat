@@ -3,10 +3,12 @@
 ## Features
 
 - Add environment variable `BAT_PAGING`, see #2629 (@einfachIrgendwer0815)
+- Add support for `LESSOPEN` and `LESSCLOSE`. See #1597, #1739, #2444, #2602, and #2662 (@Anomalocaridid)
 
 ## Bugfixes
 
 - Fix `more` not being found on Windows when provided via `BAT_PAGER`, see #2570, #2580, and #2651 (@mataha)
+- Switched default behavior of `--map-syntax` to be case insensitive #2520
 
 ## Other
 
@@ -77,7 +79,6 @@
 
 - Make the default macOS theme depend on Dark Mode. See #2197, #1746 (@Enselic)
 - Support for separate system and user config files. See #668 (@patrickpichler)
-- Add support for $LESSOPEN and $LESSCLOSE. See #1597, #1739, and #2444 (@Anomalocaridid)
 
 ## Bugfixes
 
