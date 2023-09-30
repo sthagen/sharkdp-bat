@@ -406,7 +406,7 @@ You will need to install the [Visual C++ Redistributable](https://support.micros
 You can install `bat` via [WinGet](https://learn.microsoft.com/en-us/windows/package-manager/winget):
 
 ```bash
-winget install --id=sharkdp.bat -e
+winget install sharkdp.bat
 ```
 
 #### With Chocolatey
@@ -421,13 +421,6 @@ choco install bat
 You can install `bat` via [scoop](https://scoop.sh/):
 ```bash
 scoop install bat
-```
-
-#### With Winget
-
-You can install `bat` via [Winget](https://learn.microsoft.com/en-us/windows/package-manager/):
-```bash
-winget install sharkdp.bat
 ```
 
 #### From prebuilt binaries:
