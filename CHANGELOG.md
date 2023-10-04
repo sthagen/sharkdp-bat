@@ -9,7 +9,7 @@
 
 - Fix `more` not being found on Windows when provided via `BAT_PAGER`, see #2570, #2580, and #2651 (@mataha)
 - Switched default behavior of `--map-syntax` to be case insensitive #2520
-
+- Updated version of `serde_yaml` to `0.9`. See #2627 (@Raghav-Bell)
 ## Other
 
 - Output directory for generated assets (completion, manual) can be customized, see #2515 (@tranzystorek-io)
@@ -21,7 +21,9 @@
 - Associate `Containerfile` with `Dockerfile` syntax, see #2606 (@einfachIrgendwer0815)
 - Replaced quotes with double quotes so fzf integration example script works on windows and linux. see #2095 (@johnmatthiggins)
 - Associate `ksh` files with `bash` syntax, see #2633 (@johnmatthiggins)
+- Associate `sarif` files with `JSON` syntax, see #2695 (@rhysd)
 - Associate `ron` files with `rust` syntax, see #2427 (@YeungOnion)
+- Add support for [WebGPU Shader Language](https://www.w3.org/TR/WGSL/), see #2692 (@rhysd)
 
 ## Themes
 

@@ -16,6 +16,9 @@ in the `.sublime-syntax` format.
 2. If the Sublime Text syntax is only available as a `.tmLanguage` file, open the file in
    Sublime Text and convert it to a `.sublime-syntax` file via *Tools* -> *Developer* ->
    *New Syntax from XXX.tmLanguage...*. Save the new file in the `assets/syntaxes` folder.
+   If only `.tmLanguage.json` or `.tmLanguage.yml` file is available, use
+   [PackageDev](https://packagecontrol.io/packages/PackageDev) to convert it to `.tmLanguage.plist`
+   format and then rename the converted file to `.tmLanguage` file.
 
 3. Run the `assets/create.sh` script. It calls `bat cache --build` to parse all available
    `.sublime-syntax` files and serialize them to a `syntaxes.bin` file.
@@ -84,6 +87,7 @@ The following files have been manually modified after converting from a `.tmLang
 * `Org mode.sublime-syntax` => removed `task` file type.
 * `Robot.sublime_syntax` => changed name to "Robot Framework", added `.resource` extension.
 * `SML.sublime_syntax` => removed `ml` file type.
+* `wgsl.sublime-syntax` => added `wgsl` file extension.
 
 ### Non-submodule additions
 
