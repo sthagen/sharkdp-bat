@@ -6,6 +6,7 @@
 
 - Fix long file name wrapping in header, see #2835 (@FilipRazek)
 - Fix `NO_COLOR` support, see #2767 (@acuteenvy)
+- Fix handling of inputs with OSC ANSI escape sequences, see #2541 and #2544 (@eth-p)
 
 ## Other
 
@@ -20,6 +21,7 @@
 - Use proper Architecture for Debian packages built for musl, see #2811 (@Enselic)
 - Pull in fix for unsafe-libyaml security advisory, see #2812 (@dtolnay)
 - Update git-version dependency to use Syn v2, see #2816 (@dtolnay)
+- Update git2 dependency to v0.18.2, see #2852 (@eth-p)
 
 ## Syntaxes
 
