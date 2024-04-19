@@ -200,14 +200,14 @@ pub fn list_themes(cfg: &Config, config_dir: &Path, cache_dir: &Path) -> Result<
     let stdout = io::stdout();
     let mut stdout = stdout.lock();
 
-    if config.colored_output {
-        let default_theme = HighlightingAssets::default_theme();
-        for theme in assets.themes() {
-            let default_theme_info = if default_theme == theme {
-                " (default)"
-            } else {
-                ""
-            };
+    let default_theme = HighlightingAssets::default_theme();
+    for theme in assets.themes() {
+        let default_theme_info = if default_theme == theme {
+            " (default)"
+        } else {
+            ""
+        };
+        if config.colored_output {
             writeln!(
                 stdout,
                 "Theme: {}{}\n",
@@ -219,7 +219,12 @@ pub fn list_themes(cfg: &Config, config_dir: &Path, cache_dir: &Path) -> Result<
                 .run(vec![theme_preview_file()], None)
                 .ok();
             writeln!(stdout)?;
+        } else {
+            writeln!(stdout, "{theme}{default_theme_info}")?;
         }
+    }
+
+    if config.colored_output {
         writeln!(
             stdout,
             "Further themes can be installed to '{}', \
@@ -228,10 +233,6 @@ pub fn list_themes(cfg: &Config, config_dir: &Path, cache_dir: &Path) -> Result<
             https://github.com/sharkdp/bat#adding-new-themes",
             config_dir.join("themes").to_string_lossy()
         )?;
-    } else {
-        for theme in assets.themes() {
-            writeln!(stdout, "{theme}")?;
-        }
     }
 
     Ok(())
