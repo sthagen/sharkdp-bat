@@ -16,6 +16,7 @@
 - Fix handling of inputs with OSC ANSI escape sequences, see #2541 and #2544 (@eth-p)
 - Fix handling of inputs with combined ANSI color and attribute sequences, see #2185 and #2856 (@eth-p)
 - Fix panel width when line 10000 wraps, see #2854 (@eth-p)
+- Fix compile issue of `time` dependency caused by standard library regression #3045 (@cyqsimon)
 
 ## Other
 
@@ -53,6 +54,7 @@
 - Added auto detect syntax for `.aws/{config,credentials}` #2795 (@mxaddict)
 - Add syntax mapping for Wireguard config #2874 (@cyqsimon)
 - Associate `.textproto` files with `ProtoBuf` syntax, see #3038 (@vorburger).
+- Add support for [CFML](https://www.adobe.com/products/coldfusion-family.html), see #3031 (@brenton-at-pieces)
 
 ## Themes
 
