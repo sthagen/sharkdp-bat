@@ -12,6 +12,7 @@
 - Automatically choose theme based on the terminal's color scheme, see #2896 (@bash)
 - Add option `--binary=as-text` for printing binary content, see issue #2974 and PR #2976 (@einfachIrgendwer0815)
 - Make shell completions available via `--completion <shell>`, see issue #2057 and PR #3126 (@einfachIrgendwer0815)
+- Syntax highlighting for puppet code blocks within Markdown files, see #3152 (@liliwilson)
 
 ## Bugfixes
 
@@ -49,6 +50,7 @@
 - Support 'statically linked binary' for aarch64 in 'Release' page, see #2992 (@tzq0301)
 - Update options in shell completions and the man page of `bat`, see #2995 (@akinomyoga)
 - Update nix dev-dependency to v0.29.0, see #3112 (@decathorpe)
+- Bump MSRV to [1.74](https://blog.rust-lang.org/2023/11/16/Rust-1.74.0.html), see #3154 (@keith-hall)
 
 ## Syntaxes
 
