@@ -222,6 +222,12 @@ Note that the [Manpage syntax](assets/syntaxes/02_Extra/Manpage.sublime-syntax) 
 
 The [`prettybat`](https://github.com/eth-p/bat-extras/blob/master/doc/prettybat.md) script is a wrapper that will format code and print it with `bat`.
 
+#### `Warp`
+
+<a href="https://app.warp.dev/drive/folder/-Bat-Warp-Pack-lxhe7HrEwgwpG17mvrFSz1">
+  <img src="doc/sponsors/warp-pack-header.png" alt="Warp">
+</a>
+
 #### Highlighting `--help` messages
 
 You can use `bat` to colorize help text: `$ cp --help | bat -plhelp`
