@@ -3,7 +3,8 @@
 ## Features
 
 ## Bugfixes
-* Fix `BAT_THEME_DARK` and `BAT_THEME_LIGHT` being ignored, see issue #3171 and PR #3168 (@bash)
+- Fix `BAT_THEME_DARK` and `BAT_THEME_LIGHT` being ignored, see issue #3171 and PR #3168 (@bash)
+- Prevent `--list-themes` from outputting default theme info to stdout when it is piped, see #3189 (@einfachIrgendwer0815)
 
 ## Other
 
@@ -11,7 +12,8 @@
 
 ## Syntaxes
 
--  Add syntax mapping for paru configuration files #3182 (@cyqsimon)
+- Add syntax mapping for `paru` configuration files #3182 (@cyqsimon)
+- Add support for [Idris 2 programming language](https://www.idris-lang.org/) #3150 (@buzden)
 
 ## Themes
 
