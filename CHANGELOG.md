@@ -5,6 +5,7 @@
 
 - Add paging to `--list-themes`, see PR #3239 (@einfachIrgendwer0815)
 - Support negative relative line ranges, e.g. `bat -r :-10` / `bat -r='-10:'`, see #3068 (@ajesipow)
+- Support context in line ranges, e.g. `bat -r 30::5` /  `bat -r 30:40:5`, see #3345 (@cavanaug)
 
 ## Bugfixes
 
@@ -57,6 +58,7 @@
 - Add Catppuccin, see #3317 (@SchweGELBin)
 - Updated Catppuccin, see #3333 (@SchweGELBin)
 - Updated gruvbox, see #3372 (@Nicholas42)
+- Updated GitHub theme, see #3382 (@CosmicHorrorDev)
 
 ## `bat` as a library
 
