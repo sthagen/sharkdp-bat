@@ -1287,6 +1287,83 @@ fn diagnostic_sanity_check() {
 }
 
 #[test]
+fn help_works_with_invalid_config() {
+    let tmp_dir = tempdir().expect("can create temporary directory");
+    let tmp_config_path = tmp_dir.path().join("invalid-config.conf");
+
+    // Write an invalid config file
+    std::fs::write(&tmp_config_path, "--invalid-option").expect("can write config file");
+
+    // --help should work despite invalid config
+    bat_with_config()
+        .env("BAT_CONFIG_PATH", tmp_config_path.to_str().unwrap())
+        .arg("--help")
+        .assert()
+        .success()
+        .stdout(predicate::str::contains(
+            "A cat(1) clone with syntax highlighting",
+        ));
+
+    // -h should also work
+    bat_with_config()
+        .env("BAT_CONFIG_PATH", tmp_config_path.to_str().unwrap())
+        .arg("-h")
+        .assert()
+        .success()
+        .stdout(predicate::str::contains("A cat(1) clone with wings"));
+}
+
+#[test]
+fn version_works_with_invalid_config() {
+    let tmp_dir = tempdir().expect("can create temporary directory");
+    let tmp_config_path = tmp_dir.path().join("invalid-config.conf");
+
+    // Write an invalid config file
+    std::fs::write(&tmp_config_path, "--invalid-option").expect("can write config file");
+
+    // --version should work despite invalid config
+    bat_with_config()
+        .env("BAT_CONFIG_PATH", tmp_config_path.to_str().unwrap())
+        .arg("--version")
+        .assert()
+        .success()
+        .stdout(predicate::str::contains("bat "));
+
+    // -V should also work
+    bat_with_config()
+        .env("BAT_CONFIG_PATH", tmp_config_path.to_str().unwrap())
+        .arg("-V")
+        .assert()
+        .success()
+        .stdout(predicate::str::contains("bat "));
+}
+
+#[test]
+fn diagnostic_works_with_invalid_config() {
+    let tmp_dir = tempdir().expect("can create temporary directory");
+    let tmp_config_path = tmp_dir.path().join("invalid-config.conf");
+
+    // Write an invalid config file
+    std::fs::write(&tmp_config_path, "--invalid-option").expect("can write config file");
+
+    // --diagnostic should work despite invalid config
+    bat_with_config()
+        .env("BAT_CONFIG_PATH", tmp_config_path.to_str().unwrap())
+        .arg("--diagnostic")
+        .assert()
+        .success()
+        .stdout(predicate::str::contains("#### Software version"));
+
+    // --diagnostics (alias) should also work
+    bat_with_config()
+        .env("BAT_CONFIG_PATH", tmp_config_path.to_str().unwrap())
+        .arg("--diagnostics")
+        .assert()
+        .success()
+        .stdout(predicate::str::contains("#### Software version"));
+}
+
+#[test]
 fn config_location_test() {
     bat_with_config()
         .env("BAT_CONFIG_PATH", "bat.conf")
@@ -2324,6 +2401,24 @@ fn ansi_highlight_underline() {
         .assert()
         .success()
         .stdout("\x1B[4mAnsi Underscore Test\n\x1B[24mAnother Line")
+        .stderr("");
+}
+
+// we don't really test other color schemes in the syntax-tests/source vs highlighted stuff
+// so here a simple integration test has been made for the ANSI theme,
+// which lives directly inside the bat repository
+#[test]
+fn ansi_highlight_json_keys() {
+    bat()
+        .arg("--paging=never")
+        .arg("--color=always")
+        .arg("--decorations=never")
+        .arg("--theme=ansi")
+        .arg("--language=json")
+        .write_stdin("{\"foo\": \"bar\", \"test\": [123, \"baz\"] }")
+        .assert()
+        .success()
+        .stdout("{\x1B[34m\"\x1B[0m\x1B[34mfoo\x1B[0m\x1B[34m\"\x1B[0m: \x1B[32m\"\x1B[0m\x1B[32mbar\x1B[0m\x1B[32m\"\x1B[0m, \x1B[34m\"\x1B[0m\x1B[34mtest\x1B[0m\x1B[34m\"\x1B[0m: [\x1B[33m123\x1B[0m, \x1B[32m\"\x1B[0m\x1B[32mbaz\x1B[0m\x1B[32m\"\x1B[0m] }")
         .stderr("");
 }
 
