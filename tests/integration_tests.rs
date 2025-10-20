@@ -207,10 +207,21 @@ fn line_range_from_back_last_two() {
 }
 
 #[test]
-fn line_range_from_back_last_two_single_line() {
+fn line_range_from_back_last_two_single_line_eq_sep() {
     bat()
         .arg("single-line.txt")
         .arg("--line-range=-2:")
+        .assert()
+        .success()
+        .stdout("Single Line");
+}
+
+#[test]
+fn line_range_from_back_last_two_single_line_no_sep() {
+    bat()
+        .arg("single-line.txt")
+        .arg("--line-range")
+        .arg("-2:")
         .assert()
         .success()
         .stdout("Single Line");
@@ -375,6 +386,83 @@ fn line_range_context_very_large() {
         .success()
         .stdout(
             "line 1\nline 2\nline 3\nline 4\nline 5\nline 6\nline 7\nline 8\nline 9\nline 10\n",
+        );
+}
+
+#[test]
+fn piped_output_with_implicit_auto_style() {
+    bat()
+        .write_stdin("hello\nworld\n")
+        .assert()
+        .success()
+        .stdout("hello\nworld\n");
+}
+
+#[test]
+fn piped_output_with_line_number_flag() {
+    bat()
+        .arg("--number")
+        .write_stdin("hello\nworld\n")
+        .assert()
+        .success()
+        .stdout("   1 hello\n   2 world\n");
+}
+
+#[test]
+fn piped_output_with_line_numbers_style_flag() {
+    bat()
+        .arg("--style=numbers")
+        .write_stdin("hello\nworld\n")
+        .assert()
+        .success()
+        .stdout("   1 hello\n   2 world\n");
+}
+
+#[test]
+#[cfg(not(target_os = "windows"))]
+fn piped_output_with_line_numbers_with_header_grid_style_flag() {
+    bat()
+        .arg("--style=header,grid,numbers")
+        .write_stdin("hello\nworld\n")
+        .assert()
+        .success()
+        .stdout(
+            "─────┬──────────────────────────────────────────────────────────────────────────
+     │ STDIN
+─────┼──────────────────────────────────────────────────────────────────────────
+   1 │ hello
+   2 │ world
+─────┴──────────────────────────────────────────────────────────────────────────
+",
+        );
+}
+
+#[test]
+fn piped_output_with_auto_style() {
+    bat()
+        .arg("--style=auto")
+        .write_stdin("hello\nworld\n")
+        .assert()
+        .success()
+        .stdout("hello\nworld\n"); // Should be plain when piped
+}
+
+#[test]
+#[cfg(not(target_os = "windows"))]
+fn piped_output_with_default_style_flag() {
+    bat()
+        .arg("--style=default")
+        .write_stdin("hello\nworld\n")
+        .assert()
+        .success()
+        .stdout(
+            "─────┬──────────────────────────────────────────────────────────────────────────
+     │ STDIN
+─────┼──────────────────────────────────────────────────────────────────────────
+   1 │ hello
+   2 │ world
+─────┴──────────────────────────────────────────────────────────────────────────
+",
         );
 }
 

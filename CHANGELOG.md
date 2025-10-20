@@ -1,13 +1,30 @@
 # unreleased
 
 ## Features
-- Add build for windows/ARM64 platform. #3190 (@alcroito)
 
+## Bugfixes
+
+- Fix negative values of N not being parsed in <N:M> line ranges without `=` flag value separator, see #3442 (@lmmx)
+
+## Other
+- Improve README documentation on pager options passed to less, see #3443 (@injust)
+
+- Use more robust approach to escaping in Bash completions, see #3448 (@akinomyoga)
+
+## Syntaxes
+
+## Themes
+
+## `bat` as a library
+
+# v0.26.0
+
+## Features
+- Add build for windows/ARM64 platform. #3190 (@alcroito)
 - Add paging to `--list-themes`, see PR #3239 (@einfachIrgendwer0815)
 - Support negative relative line ranges, e.g. `bat -r :-10` / `bat -r='-10:'`, see #3068 (@ajesipow)
 - Support context in line ranges, e.g. `bat -r 30::5` /  `bat -r 30:40:5`, see #3345 (@cavanaug)
 - Add built-in 'minus' pager, e.g. `bat --pager=builtin` see PR #3402 (@academician)
-- Syntax highlighting for typescript code blocks within Markdown files, see #3435 (@MuntasirSZN)
 
 ## Bugfixes
 
@@ -24,13 +41,14 @@
 - `--style=changes` no longer prints a two-space indent when the file is unmodified, see issue #2710 and PR #3406 (@jyn514)
 - Add missing shell completions, see #3411 (@keith-hall)
 - Execute help/version/diagnostic commands even with invalid config/arguments present, see #3414 (@keith-hall)
+- Fixed line numbers (`-n`) and style components not printing when piping output, see issue #2935 and PR #3438 (@lmmx)
 
 ## Other
 
 - Update base16 README links to community driven base16 work #2871 (@JamyGolden)
 - Work around build failures when building `bat` from vendored sources #3179 (@dtolnay)
 - CICD: Stop building for x86_64-pc-windows-gnu which fails #3261 (Enselic)
-- CICD:  CICD: replace windows-2019 runners with windows-2025 #3339 (@cyqsimon)
+- CICD: replace windows-2019 runners with windows-2025 #3339 (@cyqsimon)
 - Build script: replace string-based codegen with quote-based codegen #3340 (@cyqsimon)
 - Improve code coverage of `--list-languages` parameter #2942 (@sblondon)
 - Only start offload worker thread when there's more than 1 core #2956 (@cyqsimon)
@@ -64,6 +82,7 @@
 - Map `.kshrc` files to Bash syntax #3364 (@ritoban23)
 - Map `/var/log/dmesg` files to Syslog syntax #3412 (@keith-hall)
 - Add syntax definition and test file for Go modules(`go.mod` and `go.sum`) highlighting, see #3424 (@DarkMatter-999)
+- Syntax highlighting for typescript code blocks within Markdown files, see #3435 (@MuntasirSZN)
 
 ## Themes
 
@@ -72,8 +91,6 @@
 - Updated gruvbox, see #3372 (@Nicholas42)
 - Updated GitHub theme, see #3382 (@CosmicHorrorDev)
 - Updated ANSI theme to highlight JSON object keys differently from values, see #3413 (@keith-hall)
-
-## `bat` as a library
 
 # v0.25.0
 
