@@ -8,10 +8,11 @@
 
 - Fix hang when using `--list-themes` with an explicit pager, see #3457 (@abhinavcool42)
 - Fix negative values of N not being parsed in <N:M> line ranges without `=` flag value separator, see #3442 (@lmmx)
+- Fix broken Docker syntax preventing use of custom assets, see #3476 (@keith-hall)
 
 ## Other
 - Improve README documentation on pager options passed to less, see #3443 (@injust)
-
+- Make PowerShell completions compatible with PowerShell v5.1, see #3495 (@keith-hall)
 - Use more robust approach to escaping in Bash completions, see #3448 (@akinomyoga)
 
 ## Syntaxes
