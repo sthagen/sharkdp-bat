@@ -1,4 +1,4 @@
-# unreleased
+# v0.26.1
 
 ## Features
 
@@ -10,6 +10,8 @@
 - Fix negative values of N not being parsed in <N:M> line ranges without `=` flag value separator, see #3442 (@lmmx)
 - Fix broken Docker syntax preventing use of custom assets, see #3476 (@keith-hall)
 - Fix decorations being applied unexpectedly when piping. Now only line numbers explicitly required on the command line should be applied in auto decorations mode for `cat` compatibility. See #3496 (@keith-hall)
+- Fix diagnostics attempting to find the version of an executable named builtin when builtin pager is used. See #3498 (@keith-hall)
+- `--help` now correctly reads the config file for theme information etc. See #3507 (@keith-hall)
 
 ## Other
 - Improve README documentation on pager options passed to less, see #3443 (@injust)
@@ -21,6 +23,7 @@
 - Update quadlet syntax mapping to include *.{build,pod} files #3484 (@cyqsimon)
 - Fix inconsistencies in Ada syntax, see #3481 (@AldanTanneo)
 - Add syntax mapping for podman's `artifact` quadlet files, see #3497 (@xduugu)
+- Highlight Korn Shell scripts (i.e. with a shebang of ...`ksh`) using Bash syntax, see #3509 (@keith-hall)
 
 ## Themes
 
