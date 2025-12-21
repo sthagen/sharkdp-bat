@@ -110,16 +110,18 @@ impl App {
                 _ => interactive_output, // auto: use color if interactive
             };
 
-            let custom_pager = matches.get_one::<String>("pager").map(|s| s.to_string());
+            let pager = matches.get_one::<String>("pager").map(|s| s.as_str());
             let theme_options = Self::theme_options_from_matches(&matches);
+            let use_custom_assets = !matches.get_flag("no-custom-assets");
 
             Self::display_help(
                 interactive_output,
                 help_type,
                 use_pager,
                 use_color,
-                custom_pager,
+                pager,
                 theme_options,
+                use_custom_assets,
             )?;
             std::process::exit(0);
         }
@@ -136,8 +138,9 @@ impl App {
         help_type: HelpType,
         use_pager: bool,
         use_color: bool,
-        custom_pager: Option<String>,
+        pager: Option<&str>,
         theme_options: ThemeOptions,
+        use_custom_assets: bool,
     ) -> Result<()> {
         use crate::assets::assets_from_cache_or_binary;
         use crate::directories::PROJECT_DIRS;
@@ -164,12 +167,10 @@ impl App {
             PagingMode::Never
         };
 
-        let pager = bat::config::get_pager_executable(custom_pager.as_deref());
-
         let help_config = Config {
             style_components: StyleComponents::new(StyleComponent::Plain.components(false)),
             paging_mode,
-            pager: pager.as_deref(),
+            pager,
             colored_output: use_color,
             true_color: use_color,
             language: if use_color { Some("help") } else { None },
@@ -178,7 +179,7 @@ impl App {
         };
 
         let cache_dir = PROJECT_DIRS.cache_dir();
-        let assets = assets_from_cache_or_binary(false, cache_dir)?;
+        let assets = assets_from_cache_or_binary(use_custom_assets, cache_dir)?;
         Controller::new(&help_config, &assets)
             .run(inputs, None)
             .ok();

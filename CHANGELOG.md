@@ -1,3 +1,24 @@
+# unreleased
+
+## Features
+
+- Improve native man pages and command help syntax highlighting by stripping overstriking, see #3517 (@akirk)
+
+## Bugfixes
+- `--help` now correctly honors `--pager=builtin`. See #3516 (@keith-hall)
+- `--help` now correctly honors custom themes. See #3524 (@keith-hall)
+
+## Other
+
+## Syntaxes
+
+- Change the URL of Zig submodule from GitHub to Codeberg, see #3519 (@sorairolake)
+- Don't color strings inside CSV files, to make it easier to tell which column they belong to, see #3521 (@keith-hall)
+
+## Themes
+
+## `bat` as a library
+
 # v0.26.1
 
 ## Features
