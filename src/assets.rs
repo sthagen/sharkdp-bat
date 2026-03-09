@@ -210,6 +210,7 @@ impl HighlightingAssets {
     pub(crate) fn get_syntax(
         &self,
         language: Option<&str>,
+        fallback_syntax: Option<&str>,
         input: &mut OpenedInput,
         mapping: &SyntaxMapping,
     ) -> Result<SyntaxReferenceInSet<'_>> {
@@ -222,21 +223,50 @@ impl HighlightingAssets {
         }
 
         let path = input.path();
-        let path_syntax = if let Some(path) = path {
-            self.get_syntax_for_path(
-                PathAbs::new(path).map_or_else(|_| path.to_owned(), |p| p.as_path().to_path_buf()),
-                mapping,
-            )
+        let absolute_path = path.and_then(|p| {
+            PathAbs::new(p)
+                .ok()
+                .map(|abs| abs.as_path().to_path_buf())
+                .or_else(|| Some(p.to_owned()))
+        });
+
+        let path_syntax = if let Some(ref path) = absolute_path {
+            self.get_syntax_for_path(path, mapping).or_else(|e| {
+                // If syntax detection failed on the given path, retry with the
+                // canonicalized path (which resolves symlinks). This handles
+                // cases like `Aliases/0install -> ../Formula/zero-install.rb`
+                // where the symlink name has no extension but the target does.
+                // See #1001.
+                if matches!(e, Error::UndetectedSyntax(_)) {
+                    if let Ok(resolved) = fs::canonicalize(path) {
+                        if resolved != *path {
+                            return match self.get_syntax_for_path(&resolved, mapping) {
+                                Ok(syntax) => Ok(syntax),
+                                Err(Error::UndetectedSyntax(_)) => Err(e),
+                                Err(err) => Err(err),
+                            };
+                        }
+                    }
+                }
+                Err(e)
+            })
         } else {
             Err(Error::UndetectedSyntax("[unknown]".into()))
         };
 
+        // If a path wasn't provided, or if path based syntax detection
+        // above failed, we fall back to first-line syntax detection.
         match path_syntax {
-            // If a path wasn't provided, or if path based syntax detection
-            // above failed, we fall back to first-line syntax detection.
-            Err(Error::UndetectedSyntax(path)) => self
-                .get_first_line_syntax(&mut input.reader)?
-                .ok_or(Error::UndetectedSyntax(path)),
+            Err(Error::UndetectedSyntax(path)) => {
+                if let Some(syntax_in_set) = self.get_first_line_syntax(&mut input.reader)? {
+                    Ok(syntax_in_set)
+                } else if let Some(language) = fallback_syntax {
+                    self.find_syntax_by_token(language)?
+                        .ok_or_else(|| Error::UnknownSyntax(language.to_owned()))
+                } else {
+                    Err(Error::UndetectedSyntax(path))
+                }
+            }
             _ => path_syntax,
         }
     }
@@ -416,11 +446,12 @@ mod tests {
         fn get_syntax_name(
             &self,
             language: Option<&str>,
+            fallback_syntax: Option<&str>,
             input: &mut OpenedInput,
             mapping: &SyntaxMapping,
         ) -> String {
             self.assets
-                .get_syntax(language, input, mapping)
+                .get_syntax(language, fallback_syntax, input, mapping)
                 .map(|syntax_in_set| syntax_in_set.syntax.name.clone())
                 .unwrap_or_else(|_| "!no syntax!".to_owned())
         }
@@ -440,7 +471,7 @@ mod tests {
             let dummy_stdin: &[u8] = &[];
             let mut opened_input = input.open(dummy_stdin, None).unwrap();
 
-            self.get_syntax_name(None, &mut opened_input, &self.syntax_mapping)
+            self.get_syntax_name(None, None, &mut opened_input, &self.syntax_mapping)
         }
 
         fn syntax_for_file_with_content_os(&self, file_name: &OsStr, first_line: &str) -> String {
@@ -450,7 +481,7 @@ mod tests {
             let dummy_stdin: &[u8] = &[];
             let mut opened_input = input.open(dummy_stdin, None).unwrap();
 
-            self.get_syntax_name(None, &mut opened_input, &self.syntax_mapping)
+            self.get_syntax_name(None, None, &mut opened_input, &self.syntax_mapping)
         }
 
         #[cfg(unix)]
@@ -470,7 +501,7 @@ mod tests {
             let input = Input::stdin().with_name(Some(file_name));
             let mut opened_input = input.open(content, None).unwrap();
 
-            self.get_syntax_name(None, &mut opened_input, &self.syntax_mapping)
+            self.get_syntax_name(None, None, &mut opened_input, &self.syntax_mapping)
         }
 
         fn syntax_is_same_for_inputkinds(&self, file_name: &str, content: &str) -> bool {
@@ -752,8 +783,35 @@ contexts:
         let mut opened_input = input.open(dummy_stdin, None).unwrap();
 
         assert_eq!(
-            test.get_syntax_name(None, &mut opened_input, &test.syntax_mapping),
+            test.get_syntax_name(None, None, &mut opened_input, &test.syntax_mapping),
             "SSH Config"
+        );
+    }
+
+    #[cfg(unix)]
+    #[test]
+    fn syntax_detection_for_symlinked_file_by_target_extension() {
+        use std::os::unix::fs::symlink;
+
+        let test = SyntaxDetectionTest::new();
+
+        let formula_dir = test.temp_dir.path().join("Formula");
+        std::fs::create_dir(&formula_dir).unwrap();
+        let target = formula_dir.join("zero-install.rb");
+        File::create(&target).unwrap();
+
+        let aliases_dir = test.temp_dir.path().join("Aliases");
+        std::fs::create_dir(&aliases_dir).unwrap();
+        let link = aliases_dir.join("0install");
+        symlink(&target, &link).unwrap();
+
+        let input = Input::ordinary_file(&link);
+        let dummy_stdin: &[u8] = &[];
+        let mut opened_input = input.open(dummy_stdin, None).unwrap();
+
+        assert_eq!(
+            test.get_syntax_name(None, None, &mut opened_input, &test.syntax_mapping),
+            "Ruby"
         );
     }
 }

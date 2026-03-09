@@ -11,8 +11,11 @@
 - Added an initial `flake.nix` for a ready made development environment; see #3578 (@vorburger)
 - Add `--quiet-empty` (`-E`) flag to suppress output when input is empty. Closes #1936, see #3563 (@NORMAL-EX)
 - Improve native man pages and command help syntax highlighting by stripping overstriking, see #3517 (@akirk)
+- Add `--fallback-syntax`/`--fallback-language` to apply syntax highlighting only when auto-detection fails, see #1341 (@Xavrir)
 
 ## Bugfixes
+- Fix `BAT_CONFIG_DIR` pointing at system config directory causing duplicate flag errors. Closes #3589, see #3620 (@Xavrir)
+- Fix syntax highlighting for symlinked files when the symlink name has no extension but the target does. Closes #1001, see #3621 (@Xavrir)
 - Report error when pager is missing instead of silently falling back, see #3588 (@IMaloney)
 - Fix `--wrap=never` and `-S` flags being ignored when piping to pager, see #3592 (@IMaloney)
 - Fix crash with BusyBox `less` on Windows, see #3527 (@Anchal-T)
