@@ -8,8 +8,12 @@
 
 ## Features
 
+<<<<<<< HEAD
 - Preserve `--diff` change markers and snip separators when `--plain` is set. Closes #3630, see #3643 (@mvanhorn)
 - Add shebang-based detection for Tcl (`tclsh`, `wish`) and Expect (`expect`) scripts, see #3513 (@mvanhorn)
+=======
+- Add shebang-based detection for Tcl (`tclsh`, `wish`) and Expect (`expect`) scripts, see #3647 (@mvanhorn)
+>>>>>>> 785fff9 (fix: reference PR number in changelog entry)
 - Added support for `hidden_file_extensions` from `.sublime-syntax` files, see #3613 (@Matei02355)
 - Add word wrapping mode via `--wrap=word`, see #3597 (@veeceey)
 - Support configuring `--terminal-width` via `BAT_WIDTH`, see #3679 (@officialasishkumar)
