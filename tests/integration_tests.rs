@@ -2682,6 +2682,25 @@ fn binary_as_text() {
 }
 
 #[test]
+fn binary_as_text_control_char_width() {
+    // Control characters are displayed as caret notation (e.g. ^@) by the
+    // terminal, occupying 2 columns each. With 20 NUL bytes (40 columns) +
+    // "END" (3 columns) = 43 columns, wrapping at terminal width 40 must
+    // produce 2 lines, not 1. See #3631.
+    bat()
+        .arg("--binary=as-text")
+        .arg("--wrap=character")
+        .arg("--terminal-width=40")
+        .arg("--decorations=always")
+        .arg("--style=plain")
+        .arg("--color=never")
+        .arg("regression_tests/issue_3631.txt")
+        .assert()
+        .success()
+        .stdout(predicate::function(|s: &str| s.lines().count() == 2));
+}
+
+#[test]
 fn no_strip_overstrike_for_plain_text() {
     // Overstrike is preserved for plain text files (no syntax highlighting)
     bat()
@@ -3964,4 +3983,152 @@ fn word_wrap_short_line_no_wrap() {
         .assert()
         .success()
         .stdout("Single Line\n");
+}
+
+#[cfg(unix)]
+#[cfg(feature = "git")]
+fn setup_diff_test_repo() -> tempfile::TempDir {
+    use std::process::Command;
+
+    let dir = tempfile::tempdir().expect("can create temporary directory");
+    let repo = dir.path();
+
+    // Initialize a git repo and commit a file
+    Command::new("git")
+        .args(["init"])
+        .current_dir(repo)
+        .output()
+        .expect("git init");
+
+    Command::new("git")
+        .args(["config", "user.email", "test@test.com"])
+        .current_dir(repo)
+        .output()
+        .expect("git config email");
+
+    Command::new("git")
+        .args(["config", "user.name", "Test"])
+        .current_dir(repo)
+        .output()
+        .expect("git config name");
+
+    std::fs::write(repo.join("test.txt"), "line 1\nline 2\nline 3\n").expect("can write test file");
+
+    Command::new("git")
+        .args(["add", "test.txt"])
+        .current_dir(repo)
+        .output()
+        .expect("git add");
+
+    Command::new("git")
+        .args(["commit", "-m", "initial"])
+        .current_dir(repo)
+        .output()
+        .expect("git commit");
+
+    // Modify the file so --diff has something to show
+    std::fs::write(
+        repo.join("test.txt"),
+        "line 1\nline 2 modified\nline 3\nline 4 added\n",
+    )
+    .expect("can write modified test file");
+
+    dir
+}
+
+#[cfg(unix)]
+#[cfg(feature = "git")]
+#[test]
+fn diff_plain_preserves_change_markers() {
+    let repo = setup_diff_test_repo();
+
+    // With --diff --plain, output should contain the change marker column
+    // but not other decorations like line numbers or grid
+    let output = bat()
+        .current_dir(repo.path())
+        .arg("--diff")
+        .arg("--plain")
+        .arg("--color=never")
+        .arg("--decorations=always")
+        .arg("test.txt")
+        .assert()
+        .success()
+        .get_output()
+        .stdout
+        .clone();
+
+    let stdout = std::str::from_utf8(&output).expect("valid utf-8");
+
+    // The output should contain the modified and added lines
+    assert!(
+        stdout.contains("line 2 modified"),
+        "diff plain output should contain modified line, got: {stdout}"
+    );
+    assert!(
+        stdout.contains("line 4 added"),
+        "diff plain output should contain added line, got: {stdout}"
+    );
+
+    // Should NOT contain line numbers (a decoration that --plain disables)
+    assert!(
+        !stdout.contains("   1"),
+        "diff plain output should not contain line numbers, got: {stdout}"
+    );
+}
+
+#[cfg(unix)]
+#[cfg(feature = "git")]
+#[test]
+fn diff_plain_does_not_show_grid_or_header() {
+    let repo = setup_diff_test_repo();
+
+    let output = bat()
+        .current_dir(repo.path())
+        .arg("--diff")
+        .arg("--plain")
+        .arg("--color=never")
+        .arg("--decorations=always")
+        .arg("--terminal-width=80")
+        .arg("test.txt")
+        .assert()
+        .success()
+        .get_output()
+        .stdout
+        .clone();
+
+    let stdout = std::str::from_utf8(&output).expect("valid utf-8");
+
+    // Grid lines use box-drawing characters
+    assert!(
+        !stdout.contains('─'),
+        "diff plain output should not contain grid lines, got: {stdout}"
+    );
+    assert!(
+        !stdout.contains('│'),
+        "diff plain output should not contain grid separators, got: {stdout}"
+    );
+
+    // Header shows "File: <filename>"
+    assert!(
+        !stdout.contains("File:"),
+        "diff plain output should not contain file header, got: {stdout}"
+    );
+}
+
+#[cfg(unix)]
+#[cfg(feature = "git")]
+#[test]
+fn plain_without_diff_still_works() {
+    let repo = setup_diff_test_repo();
+
+    // --plain without --diff should output file content with no decorations at all
+    bat()
+        .current_dir(repo.path())
+        .arg("--plain")
+        .arg("--color=never")
+        .arg("--decorations=always")
+        .arg("test.txt")
+        .assert()
+        .success()
+        .stdout("line 1\nline 2 modified\nline 3\nline 4 added\n");
 }

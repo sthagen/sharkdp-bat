@@ -5,6 +5,7 @@
 
 ## Features
 
+- Preserve `--diff` change markers and snip separators when `--plain` is set. Closes #3630, see #3643 (@mvanhorn)
 - Added support for `hidden_file_extensions` from `.sublime-syntax` files, see #3613 (@Matei02355)
 - Add word wrapping mode via `--wrap=word`, see #3597 (@veeceey)
 - Implement `--unbuffered` mode for streaming input, allowing partial lines to display immediately (e.g. `tail -f | bat -u`). Closes #3555, see #3583 (@mainnebula)
@@ -12,8 +13,11 @@
 - Add `--quiet-empty` (`-E`) flag to suppress output when input is empty. Closes #1936, see #3563 (@NORMAL-EX)
 - Improve native man pages and command help syntax highlighting by stripping overstriking, see #3517 (@akirk)
 - Add `--fallback-syntax`/`--fallback-language` to apply syntax highlighting only when auto-detection fails, see #1341 (@Xavrir)
+- Map `BUILD` case sensitively to Python (Starlark) for Bazel, see #3576 (@vorburger)
 
 ## Bugfixes
+- Fix inconsistent `.deb` MUSL package names (aarch64-musl used `arm64` instead of `musl-linux-arm64`, and `musleabihf` target missed `bat-musl` prefix). Closes #3482, see #3642 (@mvanhorn)
+- Fix incorrect text width computation when using `--binary=as-text` with non-printable characters in caret notation, see #3640 and #3631 (@eyupcanakman)
 - Fix `BAT_CONFIG_DIR` pointing at system config directory causing duplicate flag errors. Closes #3589, see #3620 (@Xavrir)
 - Fix syntax highlighting for symlinked files when the symlink name has no extension but the target does. Closes #1001, see #3621 (@Xavrir)
 - Report error when pager is missing instead of silently falling back, see #3588 (@IMaloney)
