@@ -1,7 +1,5 @@
 # unreleased
 
-- Fixed bug caused by using `--plain` and `--terminal-width=N` flags simultaneously, see #3529 (@H4k1l)
-- Fixed syntax tests path, see #3610 (@foxfromworld)
 
 ## Features
 
@@ -16,6 +14,7 @@
 - Map `BUILD` case sensitively to Python (Starlark) for Bazel, see #3576 (@vorburger)
 
 ## Bugfixes
+- Fix i686 `.deb` package using incorrect architecture name (`i686` instead of `i386`), preventing installation on Debian. Closes #3611, see #3650 (@Sim-hu)
 - Fix inconsistent `.deb` MUSL package names (aarch64-musl used `arm64` instead of `musl-linux-arm64`, and `musleabihf` target missed `bat-musl` prefix). Closes #3482, see #3642 (@mvanhorn)
 - Fix incorrect text width computation when using `--binary=as-text` with non-printable characters in caret notation, see #3640 and #3631 (@eyupcanakman)
 - Fix `BAT_CONFIG_DIR` pointing at system config directory causing duplicate flag errors. Closes #3589, see #3620 (@Xavrir)
@@ -27,10 +26,13 @@
 - `--help` now correctly honors `--pager=builtin`. See #3516 (@keith-hall)
 - `--help` now correctly honors custom themes. See #3524 (@keith-hall)
 - Fixed test compatibility with future Cargo build directory changes, see #3550 (@nmacl)
+- Fixed bug caused by using `--plain` and `--terminal-width=N` flags simultaneously, see #3529 (@H4k1l)
+- Fixed syntax tests path, see #3610 (@foxfromworld)
 
 ## Other
-
+- Use git version of cross. See #3533 (@OctopusET)
 - Bump MSRV to 1.88, update `time` crate to 0.3.47 to fix RUSTSEC-2026-0009, see #3581 (@NORMAL-EX)
+- Allow home and end keys to be used with builtin pager, see #3651 (@keith-hall)
 
 ## Syntaxes
 
