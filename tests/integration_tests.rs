@@ -4201,6 +4201,8 @@ fn plain_without_diff_still_works() {
         .assert()
         .success()
         .stdout("line 1\nline 2 modified\nline 3\nline 4 added\n");
+}
+
 #[test]
 fn tcl_shebang_detection_tclsh() {
     bat()
