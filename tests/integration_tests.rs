@@ -4202,3 +4202,36 @@ fn plain_without_diff_still_works() {
         .success()
         .stdout("line 1\nline 2 modified\nline 3\nline 4 added\n");
 }
+
+#[test]
+fn tcl_shebang_detection_tclsh() {
+    bat()
+        .arg("--color=always")
+        .arg("--style=plain")
+        .arg("--decorations=always")
+        .arg("regression_tests/issue_3647_tclsh")
+        .assert()
+        .success();
+}
+
+#[test]
+fn tcl_shebang_detection_wish() {
+    bat()
+        .arg("--color=always")
+        .arg("--style=plain")
+        .arg("--decorations=always")
+        .arg("regression_tests/issue_3647_wish")
+        .assert()
+        .success();
+}
+
+#[test]
+fn tcl_shebang_detection_expect() {
+    bat()
+        .arg("--color=always")
+        .arg("--style=plain")
+        .arg("--decorations=always")
+        .arg("regression_tests/issue_3647_expect")
+        .assert()
+        .success();
+}
