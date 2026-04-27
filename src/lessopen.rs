@@ -155,7 +155,7 @@ impl LessOpenPreprocessor {
 
         Ok(OpenedInput {
             kind,
-            reader: InputReader::new(BufReader::new(
+            reader: InputReader::try_new(BufReader::new(
                 if matches!(self.kind, LessOpenKind::TempFile) {
                     let lessopen_string = match String::from_utf8(lessopen_stdout) {
                         Ok(string) => string,
@@ -192,7 +192,7 @@ impl LessOpenPreprocessor {
                             .map(|s| s.replacen("%s", &path_str, 1).replacen("%s", "-", 1)),
                     }
                 },
-            )),
+            ))?,
             metadata: input.metadata,
             description: input.description,
         })
