@@ -207,7 +207,7 @@ impl<'a> Input<'a> {
                     kind: OpenedInputKind::StdIn,
                     description,
                     metadata: self.metadata,
-                    reader: InputReader::new(stdin),
+                    reader: InputReader::try_new(stdin)?,
                 })
             }
 
@@ -236,14 +236,14 @@ impl<'a> Input<'a> {
                         file = input_identifier.into_inner().expect("The file was lost in the clircle::Identifier, this should not have happened...");
                     }
 
-                    InputReader::new(BufReader::new(file))
+                    InputReader::try_new(BufReader::new(file))?
                 },
             }),
             InputKind::CustomReader(reader) => Ok(OpenedInput {
                 description,
                 kind: OpenedInputKind::CustomReader,
                 metadata: self.metadata,
-                reader: InputReader::new(BufReader::new(reader)),
+                reader: InputReader::try_new(BufReader::new(reader))?,
             }),
         }
     }
@@ -257,24 +257,29 @@ pub(crate) struct InputReader<'a> {
 }
 
 impl<'a> InputReader<'a> {
-    pub(crate) fn new<R: BufRead + 'a>(mut reader: R) -> InputReader<'a> {
+    #[cfg(test)]
+    pub(crate) fn new<R: BufRead + 'a>(reader: R) -> InputReader<'a> {
+        Self::try_new(reader).expect("reading the first line failed")
+    }
+
+    pub(crate) fn try_new<R: BufRead + 'a>(mut reader: R) -> io::Result<InputReader<'a>> {
         let mut first_line = vec![];
-        reader.read_until(b'\n', &mut first_line).ok();
+        reader.read_until(b'\n', &mut first_line)?;
 
         let content_type = inspect_content_type(&first_line);
 
         if content_type == Some(ContentType::UTF_16LE) {
-            read_utf16_line(&mut reader, &mut first_line, 0x00, 0x0A).ok();
+            read_utf16_line(&mut reader, &mut first_line, 0x00, 0x0A)?;
         } else if content_type == Some(ContentType::UTF_16BE) {
-            read_utf16_line(&mut reader, &mut first_line, 0x0A, 0x00).ok();
+            read_utf16_line(&mut reader, &mut first_line, 0x0A, 0x00)?;
         }
 
-        InputReader {
+        Ok(InputReader {
             inner: Box::new(reader),
             first_line,
             content_type,
             unbuffered: false,
-        }
+        })
     }
 
     pub(crate) fn read_line(&mut self, buf: &mut Vec<u8>) -> io::Result<bool> {
@@ -403,6 +408,27 @@ fn non_zip_pk_prefix_is_not_treated_as_binary() {
         Some(ContentType::UTF_8),
         inspect_content_type(b"PK\x03\x03hello")
     );
+}
+
+#[test]
+fn input_open_returns_initial_read_errors() {
+    struct FailingRead;
+
+    impl Read for FailingRead {
+        fn read(&mut self, _buf: &mut [u8]) -> io::Result<usize> {
+            Err(io::Error::other("initial read failed"))
+        }
+    }
+
+    let input = Input::from_reader(Box::new(FailingRead));
+    let result = input.open(io::empty(), None);
+
+    assert!(result.is_err());
+    assert!(result
+        .err()
+        .unwrap()
+        .to_string()
+        .contains("initial read failed"));
 }
 
 #[test]

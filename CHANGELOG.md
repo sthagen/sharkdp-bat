@@ -21,6 +21,7 @@
 - Syntax highlighting for Python files using uv as script runner in shebang #3689 (@janlarres)
 
 ## Bugfixes
+- Report initial input read errors instead of treating them as empty input. Closes #3002, see #3706 (@lawrence3699)
 - Treat ZIP archives as binary content based on their magic header, see #3686 (@officialasishkumar)
 - Fix i686 `.deb` package using incorrect architecture name (`i686` instead of `i386`), preventing installation on Debian. Closes #3611, see #3650 (@Sim-hu)
 - Fix inconsistent `.deb` MUSL package names (aarch64-musl used `arm64` instead of `musl-linux-arm64`, and `musleabihf` target missed `bat-musl` prefix). Closes #3482, see #3642 (@mvanhorn)
