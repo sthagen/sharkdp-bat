@@ -149,6 +149,35 @@ pub fn strip_ansi(line: &str) -> String {
     buffer
 }
 
+/// Escape C0, DEL, and C1 control characters so a string from an untrusted
+/// filename or path can be safely written to the terminal.
+pub fn sanitize_for_terminal(input: &str) -> String {
+    if !input
+        .chars()
+        .any(|c| matches!(c, '\x00'..='\x08' | '\x0A'..='\x1F' | '\x7F'..='\u{9F}'))
+    {
+        return input.to_owned();
+    }
+
+    let mut out = String::with_capacity(input.len() + 8);
+    for c in input.chars() {
+        match c {
+            '\t' => out.push('\t'),
+            '\x00'..='\x1F' => {
+                out.push('^');
+                out.push(char::from_u32(0x40 + c as u32).unwrap_or('?'));
+            }
+            '\x7F' => out.push_str("^?"),
+            '\u{80}'..='\u{9F}' => {
+                use std::fmt::Write as _;
+                let _ = write!(out, "\\u{{{:x}}}", c as u32);
+            }
+            other => out.push(other),
+        }
+    }
+    out
+}
+
 /// Strips overstrike sequences (backspace formatting) from input.
 ///
 /// Overstrike formatting is used by man pages and some help output:
@@ -260,4 +289,41 @@ fn test_strip_overstrike() {
 
     // Unicode with overstrike
     assert_eq!(strip_overstrike("ä\x08äöü", 2), "äöü");
+}
+
+#[test]
+fn test_sanitize_for_terminal_passthrough() {
+    assert_eq!(sanitize_for_terminal(""), "");
+    assert_eq!(sanitize_for_terminal("hello.txt"), "hello.txt");
+    assert_eq!(sanitize_for_terminal("résumé.pdf"), "résumé.pdf");
+    assert_eq!(sanitize_for_terminal("日本語.md"), "日本語.md");
+    assert_eq!(
+        sanitize_for_terminal("path/with spaces/file.log"),
+        "path/with spaces/file.log"
+    );
+    assert_eq!(sanitize_for_terminal("a\tb"), "a\tb");
+}
+
+#[test]
+fn test_sanitize_for_terminal_c0_controls() {
+    assert_eq!(
+        sanitize_for_terminal("\x1b[31mINJECTED\x1b[0m.txt"),
+        "^[[31mINJECTED^[[0m.txt"
+    );
+    assert_eq!(sanitize_for_terminal("bad\x07rest"), "bad^Grest");
+    assert_eq!(sanitize_for_terminal("\x00\x08\n\r\x7F"), "^@^H^J^M^?");
+    assert_eq!(sanitize_for_terminal("\u{9b}31m"), "\\u{9b}31m");
+    assert_eq!(
+        sanitize_for_terminal("\u{9d}0;pwned\x07"),
+        "\\u{9d}0;pwned^G"
+    );
+}
+
+#[test]
+fn test_sanitize_for_terminal_idempotent_on_sanitized() {
+    let dirty = "\x1b]0;pwned\x07file.txt";
+    let clean = sanitize_for_terminal(dirty);
+    assert_eq!(sanitize_for_terminal(&clean), clean);
+    assert!(!clean.contains('\x1b'));
+    assert!(!clean.contains('\x07'));
 }

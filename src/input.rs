@@ -216,20 +216,20 @@ impl<'a> Input<'a> {
                 description,
                 metadata: self.metadata,
                 reader: {
-                    let mut file = File::open(&path)
-                        .map_err(|e| format!("'{}': {e}", path.to_string_lossy()))?;
+                    let path_display =
+                        crate::preprocessor::sanitize_for_terminal(&path.to_string_lossy());
+                    let mut file =
+                        File::open(&path).map_err(|e| format!("'{path_display}': {e}"))?;
                     if file.metadata()?.is_dir() {
-                        return Err(format!("'{}' is a directory.", path.to_string_lossy()).into());
+                        return Err(format!("'{path_display}' is a directory.").into());
                     }
 
                     if let Some(stdout) = stdout_identifier {
-                        let input_identifier = Identifier::try_from(file).map_err(|e| {
-                            format!("{}: Error identifying file: {e}", path.to_string_lossy())
-                        })?;
+                        let input_identifier = Identifier::try_from(file)
+                            .map_err(|e| format!("{path_display}: Error identifying file: {e}"))?;
                         if stdout.surely_conflicts_with(&input_identifier) {
                             return Err(format!(
-                                "IO circle detected. The input from '{}' is also an output. Aborting to avoid infinite loop.",
-                                path.to_string_lossy()
+                                "IO circle detected. The input from '{path_display}' is also an output. Aborting to avoid infinite loop.",
                             )
                             .into());
                         }

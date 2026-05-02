@@ -17,7 +17,6 @@ use std::path::Path;
 use std::process;
 
 use bat::output::{OutputHandle, OutputType};
-use bat::theme::DetectColorScheme;
 use nu_ansi_term::Color::Green;
 use nu_ansi_term::Style;
 
@@ -39,7 +38,7 @@ use bat::{
     error::*,
     input::Input,
     style::{StyleComponent, StyleComponents},
-    theme::{color_scheme, default_theme, ColorScheme},
+    theme::{default_theme, theme, ColorScheme, ThemeOptions},
     MappingTarget, PagingMode,
 };
 
@@ -197,7 +196,7 @@ pub fn list_themes(
     cfg: &Config,
     config_dir: &Path,
     cache_dir: &Path,
-    detect_color_scheme: DetectColorScheme,
+    theme_options: ThemeOptions,
 ) -> Result<()> {
     let assets = assets_from_cache_or_binary(cfg.use_custom_assets, cache_dir)?;
     let mut config = cfg.clone();
@@ -206,7 +205,7 @@ pub fn list_themes(
     config.language = Some("Rust");
     config.style_components = StyleComponents(style);
 
-    let default_theme_name = default_theme(color_scheme(detect_color_scheme).unwrap_or_default());
+    let default_theme_name = theme(theme_options).to_string();
     let mut buf = String::new();
     let mut handle = OutputHandle::FmtWrite(&mut buf);
 
@@ -259,7 +258,9 @@ pub fn list_themes(
 fn set_terminal_title_to(new_terminal_title: String) {
     let osc_command_for_setting_terminal_title = "\x1b]0;";
     let osc_end_command = "\x07";
-    print!("{osc_command_for_setting_terminal_title}{new_terminal_title}{osc_end_command}");
+    // Prevent BEL/ESC/C1 bytes in the title from terminating or nesting the OSC.
+    let safe_title = bat::sanitize_for_terminal(&new_terminal_title);
+    print!("{osc_command_for_setting_terminal_title}{safe_title}{osc_end_command}");
     io::stdout().flush().unwrap();
 }
 
@@ -426,7 +427,7 @@ fn run() -> Result<bool> {
                 };
                 run_controller(inputs, &plain_config, cache_dir)
             } else if app.matches.get_flag("list-themes") {
-                list_themes(&config, config_dir, cache_dir, DetectColorScheme::default())?;
+                list_themes(&config, config_dir, cache_dir, app.theme_options())?;
                 Ok(true)
             } else if app.matches.get_flag("config-file") {
                 println!("{}", config_file().to_string_lossy());

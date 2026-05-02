@@ -29,7 +29,9 @@ use crate::error::*;
 use crate::input::OpenedInput;
 use crate::line_range::{MaxBufferedLineNumber, RangeCheckResult};
 use crate::output::OutputHandle;
-use crate::preprocessor::{expand_tabs, replace_nonprintable, strip_ansi, strip_overstrike};
+use crate::preprocessor::{
+    expand_tabs, replace_nonprintable, sanitize_for_terminal, strip_ansi, strip_overstrike,
+};
 use crate::style::StyleComponent;
 use crate::terminal::{as_terminal_escaped, to_ansi_color};
 use crate::vscreen::{AnsiStyle, EscapeSequence, EscapeSequenceIterator};
@@ -489,7 +491,7 @@ impl Printer for InteractivePrinter<'_> {
                      (but will be present if the output of 'bat' is piped). You can use 'bat -A' \
                      to show the binary file contents.",
                     Yellow.paint("[bat warning]"),
-                    input.description.summary(),
+                    sanitize_for_terminal(&input.description.summary()),
                 )?;
             } else if self.config.style_components.grid() {
                 self.print_horizontal_line(handle, '┬')?;
@@ -543,9 +545,11 @@ impl Printer for InteractivePrinter<'_> {
                         "{}{}{mode}",
                         description
                             .kind()
-                            .map(|kind| format!("{kind}: "))
+                            .map(|kind| format!("{}: ", sanitize_for_terminal(kind)))
                             .unwrap_or_else(|| "".into()),
-                        self.colors.header_value.paint(description.title()),
+                        self.colors
+                            .header_value
+                            .paint(sanitize_for_terminal(description.title())),
                     );
                     self.print_header_multiline_component(handle, &header_filename)
                 }

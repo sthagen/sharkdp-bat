@@ -8,6 +8,7 @@
 
 ## Features
 
+- Map justfile, Justfile, .justfile, and *.justfile to Makefile syntax highlighting, see #3623 (@zachvalenta)
 - Preserve `--diff` change markers and snip separators when `--plain` is set. Closes #3630, see #3643 (@mvanhorn)
 - Added support for `hidden_file_extensions` from `.sublime-syntax` files, see #3613 (@Matei02355)
 - Add word wrapping mode via `--wrap=word`, see #3597 (@veeceey)
@@ -21,6 +22,9 @@
 - Syntax highlighting for Python files using uv as script runner in shebang #3689 (@janlarres)
 
 ## Bugfixes
+- Fix `--list-themes` unconditionally probing the terminal via OSC 10/11 even when `--theme` was set to an explicit value, see #3700 (regression introduced in bc42149a). (@optimistiCli)
+- Fix inverted `$LESSCLOSE` warning so bat warns on nonzero exit, not on success. See #3654 (@cuiweixie)
+- Sanitize control characters in filenames before displaying them in the file header, error messages, and the terminal title, preventing ANSI escape injection via crafted filenames. Closes #3054, see #3691 (@curious-rabbit)
 - Report initial input read errors instead of treating them as empty input. Closes #3002, see #3706 (@lawrence3699)
 - Treat ZIP archives as binary content based on their magic header, see #3686 (@officialasishkumar)
 - Fix i686 `.deb` package using incorrect architecture name (`i686` instead of `i386`), preventing installation on Debian. Closes #3611, see #3650 (@Sim-hu)

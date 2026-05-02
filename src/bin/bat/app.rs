@@ -645,7 +645,7 @@ impl App {
         Ok(styled_components)
     }
 
-    fn theme_options(&self) -> ThemeOptions {
+    pub(crate) fn theme_options(&self) -> ThemeOptions {
         Self::theme_options_from_matches(&self.matches)
     }
 

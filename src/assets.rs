@@ -158,7 +158,9 @@ impl HighlightingAssets {
         let syntax_match = mapping.get_syntax_for(path);
 
         if let Some(MappingTarget::MapToUnknown) = syntax_match {
-            return Err(Error::UndetectedSyntax(path.to_string_lossy().into()));
+            return Err(Error::UndetectedSyntax(
+                crate::preprocessor::sanitize_for_terminal(&path.to_string_lossy()),
+            ));
         }
 
         if let Some(MappingTarget::MapTo(syntax_name)) = syntax_match {
@@ -175,13 +177,17 @@ impl HighlightingAssets {
         ) {
             (Some(syntax), _) => Ok(syntax),
 
-            (_, Some(MappingTarget::MapExtensionToUnknown)) => {
-                Err(Error::UndetectedSyntax(path.to_string_lossy().into()))
-            }
+            (_, Some(MappingTarget::MapExtensionToUnknown)) => Err(Error::UndetectedSyntax(
+                crate::preprocessor::sanitize_for_terminal(&path.to_string_lossy()),
+            )),
 
             _ => self
                 .get_syntax_for_file_extension(file_name, &mapping.ignored_suffixes)?
-                .ok_or_else(|| Error::UndetectedSyntax(path.to_string_lossy().into())),
+                .ok_or_else(|| {
+                    Error::UndetectedSyntax(crate::preprocessor::sanitize_for_terminal(
+                        &path.to_string_lossy(),
+                    ))
+                }),
         }
     }
 
