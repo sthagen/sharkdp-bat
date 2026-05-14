@@ -90,7 +90,12 @@ _{{PROJECT_EXECUTABLE}}_main() {
         languages)
             local IFS=$'\n'
             local -a languages
-            languages=( ${(f)"$({{PROJECT_EXECUTABLE}} --color=never --decorations=never --list-languages | awk -F':|,' '{ for (i = 1; i <= NF; ++i) printf("%s:%s\n", $i, $1) }')"} )
+            # `--list-languages` emits one `name:matchers` line per language,
+            # which `_describe` parses as `value:description`. Only the
+            # language name is offered as the completion value; the matchers
+            # show up as the menu description. See
+            # https://github.com/sharkdp/bat/issues/3735.
+            languages=( ${(f)"$({{PROJECT_EXECUTABLE}} --color=never --decorations=never --list-languages)"} )
 
             _describe 'language' languages && ret=0
         ;;
